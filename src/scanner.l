@@ -188,12 +188,12 @@ int  main(int argc,char **argv){
 		}
 		cout << setw(15) << "TOKEN" << setw(15) << "LEXEME" << setw(7) << "ROW" << setw(7) << "COLUMN" << endl;
 		while ( (val = yylex()) > 0 ) { 
-			if(yyleng > column){
-				printf("Syntax Error\n");
-			}
-			else {
+			// if(yyleng > column){
+			// 	printf("Syntax Error\n");
+			// }
+			// else {
 				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
-			}
+			// }
 		}
 	}
 	else
