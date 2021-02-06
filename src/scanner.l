@@ -104,6 +104,7 @@ L?\"(\\.|[^\\"])*\"	{ count(); yylval.str = "STRING_LITERAL"; return(STRING_LITE
 "!"			{ count(); yylval.str = "!"; return('!'); }
 "-"			{ count(); yylval.str = "-"; return('-'); }
 "+"			{ count(); yylval.str = "+"; return('+'); }
+"*"			{ count(); yylval.str = "*"; return('*'); }
 "/"			{ count(); yylval.str = "/"; return('/'); }
 "%"			{ count(); yylval.str = "%"; return('%'); }
 "<"			{ count(); yylval.str = "<"; return('<'); }
