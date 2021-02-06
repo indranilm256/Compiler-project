@@ -9,12 +9,16 @@
 using namespace std;
 #define MAX_STR_LEN 1024
 
+extern FILE *yyin, *yyout; 
 int yylex(void);
 void yyerror(char *s,...);
 
 extern int yylineno;
 %}
 
+%union {
+  char *str;
+};
 
 %token IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
 %token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
@@ -444,9 +448,3 @@ void yyerror (char *s,...)
 	printf("\n%*s\n%*s\n", column, "^", column, s);
 }
 
-int main(int argc,char **argv){
-	printf("Hello\n");
-	yylex();
-	printf("%d\n", column);
-  return 0;
-}
