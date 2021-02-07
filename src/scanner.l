@@ -23,7 +23,6 @@ static void comment();
 
 %%
 "/*"			{ comment(); }
-.*"*/"			{ count(); yyerror("Illegal Comment");}
 "auto"			{ count(); yylval.str = "AUTO"; return(AUTO); }
 "break"			{ count(); yylval.str = "BREAK"; return(BREAK); }
 "case"			{ count(); yylval.str = "CASE"; return(CASE); }
@@ -117,6 +116,7 @@ L?\"(\\.|[^\\"])*\"	{ count(); yylval.str = "STRING_LITERAL"; return(STRING_LITE
 "?"			{ count(); yylval.str = "?"; return('?'); }
 
 {WS}		{ count(); }
+({L}|{D}|{WS})*"*/"			{ count(); yyerror("Illegal Comment");}
 .			{ yyerror("Undefined pattern");/* ignore bad characters */ }
 ({SP}?\"([^"\\\n]|{ES})*)        { yyerror("Incomplete String");} 
 
@@ -195,7 +195,7 @@ int  main(int argc,char **argv){
 		cout << setw(15) << "TOKEN" << setw(15) << "LEXEME" << setw(7) << "ROW" << setw(7) << "COLUMN" << endl;
 		while ( (val = yylex()) > 0 ) { 
 			if(yylval.str == "CONSTANT"){
-				printf("%s\t%s\t\t%d\t\t%d\n", yylval.str, yytext, row, column - yyleng);
+				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
 			}else if(yylval.str == "STRING_LITERAL"){
 				for(int i=0;yytext[i] != '\0';i++){
 					if(yytext[i] == '\n'){
