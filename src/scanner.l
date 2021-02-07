@@ -7,7 +7,10 @@ IS			(u|U|l|L)*
 
 %{
 #include <stdio.h>
+#include <iostream>
+#include <iomanip>
 #include "parser.tab.h"
+using namespace std;
 
 void count();
 static int check_type();
@@ -101,6 +104,7 @@ L?\"(\\.|[^\\"])*\"	{ count(); yylval.str = "STRING_LITERAL"; return(STRING_LITE
 "!"			{ count(); yylval.str = "!"; return('!'); }
 "-"			{ count(); yylval.str = "-"; return('-'); }
 "+"			{ count(); yylval.str = "+"; return('+'); }
+"*"			{ count(); yylval.str = "*"; return('*'); }
 "/"			{ count(); yylval.str = "/"; return('/'); }
 "%"			{ count(); yylval.str = "%"; return('%'); }
 "<"			{ count(); yylval.str = "<"; return('<'); }
@@ -183,12 +187,14 @@ int  main(int argc,char **argv){
 				perror("Error: ");
 				return -1;
 		}
+		cout << setw(15) << "TOKEN" << setw(15) << "LEXEME" << setw(7) << "ROW" << setw(7) << "COLUMN" << endl;
 		while ( (val = yylex()) > 0 ) { 
-			if(yylval.str == "CONSTANT"){
-				printf("%s\t%s\t\t%d\t\t%d\n", yylval.str, yytext, row, column - yyleng);
-			}
-			else 
-				printf("%s\t\t%s\t\t%d\t\t%d\n", yylval.str, yytext, row, column - yyleng);
+			// if(yyleng > column){
+			// 	printf("Syntax Error\n");
+			// }
+			// else {
+				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
+			// }
 		}
 	}
 	else
