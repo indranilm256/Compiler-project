@@ -13,6 +13,7 @@ ES  		(\\(['\?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+))
 #include <iomanip>
 #include "parser.tab.h"
 using namespace std;
+void yyerror (char *,...);
 
 void count();
 static int check_type();
