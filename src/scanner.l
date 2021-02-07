@@ -187,15 +187,21 @@ static int check_type(void)
 
 int  main(int argc,char **argv){
 	int val;
-	if(argc == 2){
-		if (!(yyin = fopen(argv[1], "r"))){
+	if(argc == 5 || argc == 3){
+		if (!(yyin = fopen(argv[2], "r"))){
 				perror("Error: ");
 				return -1;
 		}
-		cout << setw(15) << "TOKEN" << setw(15) << "LEXEME" << setw(7) << "ROW" << setw(7) << "COLUMN" << endl;
+		if (argc == 5 && !(yyout = fopen(argv[4], "w"))){
+				perror("Error: ");
+				return -1;
+		}
+		if(argc == 5)fprintf(yyout, "%20s\t%20s\t%7s\t%7s\n", "TOKEN", "LEXEME", "ROW", "COLUMN");
+		else printf("%20s\t%20s\t%7s\t%7s\n", "TOKEN", "LEXEME", "ROW", "COLUMN");
 		while ( (val = yylex()) > 0 ) { 
 			if(yylval.str == "CONSTANT"){
-				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
+				if(argc == 5)fprintf(yyout, "%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+				else printf("%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
 			}else if(yylval.str == "STRING_LITERAL"){
 				for(int i=0;yytext[i] != '\0';i++){
 					if(yytext[i] == '\n'){
@@ -205,14 +211,16 @@ int  main(int argc,char **argv){
 						continue;
 					}
 				}
-				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
+				if(argc == 5)fprintf(yyout, "%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+				else printf("%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
 			}
 			else{ 
-				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
+				if(argc == 5)fprintf(yyout, "%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+				else printf("%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
 			}
 		}
 	}
 	else
-		printf("Usage: ./bin/mycompiler ./test/test1.txt\n");
+		printf("Usage : ./bin/mycompiler -i ./test/input.txt -o output.txt\n -o tag and output file optional\n");
 	return 0;
 }
