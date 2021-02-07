@@ -4,7 +4,9 @@ H			[a-fA-F0-9]
 E			[Ee][+-]?{D}+
 FS			(f|F|l|L)
 IS			(u|U|l|L)*
-
+WS			[ \t\v\n\f]
+SP  		(u8|u|U|L)
+ES  		(\\(['\?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+))
 %{
 #include <stdio.h>
 #include <iostream>
@@ -20,7 +22,7 @@ static void comment();
 
 %%
 "/*"			{ comment(); }
-
+.*"*/"			{ count(); yyerror("Illegal Comment");}
 "auto"			{ count(); yylval.str = "AUTO"; return(AUTO); }
 "break"			{ count(); yylval.str = "BREAK"; return(BREAK); }
 "case"			{ count(); yylval.str = "CASE"; return(CASE); }
@@ -113,8 +115,10 @@ L?\"(\\.|[^\\"])*\"	{ count(); yylval.str = "STRING_LITERAL"; return(STRING_LITE
 "|"			{ count(); yylval.str = "|"; return('|'); }
 "?"			{ count(); yylval.str = "?"; return('?'); }
 
-[ \t\v\n\f]		{ count(); }
-.			{ /* ignore bad characters */ }
+{WS}		{ count(); }
+.			{ yyerror("Undefined pattern");/* ignore bad characters */ }
+({SP}?\"([^"\\\n]|{ES})*)        { yyerror("Incomplete String");} 
+
 
 %%
 
@@ -189,12 +193,22 @@ int  main(int argc,char **argv){
 		}
 		cout << setw(15) << "TOKEN" << setw(15) << "LEXEME" << setw(7) << "ROW" << setw(7) << "COLUMN" << endl;
 		while ( (val = yylex()) > 0 ) { 
-			// if(yyleng > column){
-			// 	printf("Syntax Error\n");
-			// }
-			// else {
+			if(yylval.str == "CONSTANT"){
+				printf("%s\t%s\t\t%d\t\t%d\n", yylval.str, yytext, row, column - yyleng);
+			}else if(yylval.str == "STRING_LITERAL"){
+				for(int i=0;yytext[i] != '\0';i++){
+					if(yytext[i] == '\n'){
+						printf("error at line %d: bad character \"%s\"\n", row-1, yytext );
+						exit(-1);
+					}else{
+						continue;
+					}
+				}
 				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
-			// }
+			}
+			else{ 
+				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
+			}
 		}
 	}
 	else
