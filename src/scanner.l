@@ -207,9 +207,9 @@ int  main(int argc,char **argv){
 					}
 					printf("%20s\t%20s\t%7s\t%7s\n", "TOKEN", "LEXEME", "ROW", "COLUMN");
 					while ( (val = yylex()) > 0 ) { 
-						if(yylval.str == "CONSTANT"){
-							printf("%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
-						}else if(yylval.str == "STRING_LITERAL"){
+						if(strcmp(yylval.str , "CONSTANT")==0){
+							printf("%20s\t%20s\t%7d\t%7lu\n", yylval.str, yytext, row, column - yyleng);
+						}else if(strcmp(yylval.str , "STRING_LITERAL")==0){
 							for(int i=0;yytext[i] != '\0';i++){
 								if(yytext[i] == '\n'){
 									printf("error at line %d: bad character \"%s\"\n", row-1, yytext );
@@ -218,10 +218,10 @@ int  main(int argc,char **argv){
 									continue;
 								}
 							}
-							printf("%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+							printf("%20s\t%20s\t%7d\t%7lu\n", yylval.str, yytext, row, column - yyleng);
 						}
 						else{ 
-							printf("%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+							printf("%20s\t%20s\t%7d\t%7lu\n", yylval.str, yytext, row, column - yyleng);
 						}
 					}
 					printf("\n\n*****************************************************************\n\n");
@@ -238,9 +238,9 @@ int  main(int argc,char **argv){
 						}
 						fprintf(yyout, "%20s\t%20s\t%7s\t%7s\n", "TOKEN", "LEXEME", "ROW", "COLUMN");
 						while ( (val = yylex()) > 0 ) { 
-							if(yylval.str == "CONSTANT"){
-								fprintf(yyout, "%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
-							}else if(yylval.str == "STRING_LITERAL"){
+							if(strcmp(yylval.str , "CONSTANT")==0){
+								fprintf(yyout, "%20s\t%20s\t%7d\t%7lu\n", yylval.str, yytext, row, column - yyleng);
+							}else if(strcmp(yylval.str , "STRING_LITERAL")==0){
 								for(int i=0;yytext[i] != '\0';i++){
 									if(yytext[i] == '\n'){
 										fprintf(yyout,"error at line %d: bad character \"%s\"\n", row-1, yytext );
@@ -249,10 +249,10 @@ int  main(int argc,char **argv){
 										continue;
 									}
 								}
-								fprintf(yyout, "%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+								fprintf(yyout, "%20s\t%20s\t%7d\t%7lu\n", yylval.str, yytext, row, column - yyleng);
 							}
 							else{ 
-								fprintf(yyout, "%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+								fprintf(yyout, "%20s\t%20s\t%7d\t%7lu\n", yylval.str, yytext, row, column - yyleng);
 							}
 						}
 						fprintf(yyout,"\n\n*****************************************************************\n\n");
