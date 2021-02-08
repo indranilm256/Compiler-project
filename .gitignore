@@ -1,6 +1,10 @@
-bin/*
-lex.yy.c
-parser.tab.c
-parser.tab.h
-parser.output
-output.txt
+# ignore everything
+*
+
+# except the following:
+
+!.gitignore
+!test/*
+!src/*
+!Makefile
+!README.md
