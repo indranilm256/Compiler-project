@@ -10,6 +10,7 @@ void mergeSort(int arr[],int l, int r)
 	merge(arr,l,m,r);
 }
 
+
 int main()
 {
 	int arr[] = [1,9,2,8,3,7,4,6,5];
