@@ -1,8 +1,11 @@
+ 
 #include <stdio.h>
 
 int main() {
-   /* my first program in C */
+   /* for multiline comment */ int k;
+   // single line comment 
    printf("Hello, World! \n");
    
    return 0;
 }
+

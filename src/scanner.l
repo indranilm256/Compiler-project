@@ -19,11 +19,13 @@ void yyerror (char *,...);
 void count();
 static int check_type();
 static void comment();
+static void comment_single_line();
 
 %}
 
 %%
-"/*"			{ comment(); }
+"/*"[^*/]*"*/"			{}
+"//".*			{}
 "auto"			{ count(); yylval.str = "AUTO"; return(AUTO); }
 "break"			{ count(); yylval.str = "BREAK"; return(BREAK); }
 "case"			{ count(); yylval.str = "CASE"; return(CASE); }
@@ -129,6 +131,10 @@ int yywrap(void)
 	return(1);
 }
 
+static void comment_single_line(){
+	char c, c1;
+	while((c=yyinput()) != 0) unput(c);
+}
 
 static void comment()
 {
@@ -136,7 +142,7 @@ static void comment()
 
 loop:
 	while ((c = yyinput()) != '*' && c != 0)
-		// putchar(c);
+		 putchar(c);
 
 	if ((c1 = yyinput()) != '/' && c != 0)
 	{
@@ -144,8 +150,8 @@ loop:
 		goto loop;
 	}
 
-	// if (c != 0)
-		// putchar(c1);
+	 if (c != 0)
+		 putchar(c1);
 }
 
 
