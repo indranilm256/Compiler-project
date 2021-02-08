@@ -11,12 +11,12 @@ $(BIN)/mycompiler: lex.yy.c parser.tab.c
 	@mkdir -p $(BIN)
 	$(CPP) -Wno-write-strings lex.yy.c parser.tab.c -o $(BIN)/mycompiler
 
-lex.yy.c: $(SRC)/scanner.l parser.tab.h
-	$(LEX) -t $^ > $@
+lex.yy.c: $(SRC)/scanner.l 
+	$(LEX)  $^ 
 
 parser.tab.c parser.tab.h: $(SRC)/parser.y 
 	$(YACC) -dvt $^ -o $@
 
 clean:
-	$(RM) lex.yy.c parser.tab.c parser.tab.h $(BIN)/mycompiler parser.output
+	$(RM) lex.yy.c parser.tab.c parser.tab.h output.txt $(BIN)/mycompiler parser.output
 

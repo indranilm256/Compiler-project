@@ -10,6 +10,7 @@ ES  		(\\(['\?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+))
 %{
 #include <stdio.h>
 #include <iostream>
+#include <string.h>
 #include <iomanip>
 #include "parser.tab.h"
 using namespace std;
@@ -19,10 +20,12 @@ void count();
 static int check_type();
 static void comment();
 
+
 %}
 
 %%
-"/*"			{ comment(); }
+"/*"[^*/]*"*/"			{count();}
+"//".*			{count();}
 "auto"			{ count(); yylval.str = "AUTO"; return(AUTO); }
 "break"			{ count(); yylval.str = "BREAK"; return(BREAK); }
 "case"			{ count(); yylval.str = "CASE"; return(CASE); }
@@ -129,13 +132,14 @@ int yywrap(void)
 }
 
 
+
 static void comment()
 {
 	char c, c1;
 
 loop:
 	while ((c = yyinput()) != '*' && c != 0)
-		// putchar(c);
+		 putchar(c);
 
 	if ((c1 = yyinput()) != '/' && c != 0)
 	{
@@ -143,8 +147,8 @@ loop:
 		goto loop;
 	}
 
-	// if (c != 0)
-		// putchar(c1);
+	 if (c != 0)
+		 putchar(c1);
 }
 
 
@@ -187,32 +191,75 @@ static int check_type(void)
 
 int  main(int argc,char **argv){
 	int val;
-	if(argc == 2){
-		if (!(yyin = fopen(argv[1], "r"))){
-				perror("Error: ");
-				return -1;
-		}
-		cout << setw(15) << "TOKEN" << setw(15) << "LEXEME" << setw(7) << "ROW" << setw(7) << "COLUMN" << endl;
-		while ( (val = yylex()) > 0 ) { 
-			if(yylval.str == "CONSTANT"){
-				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
-			}else if(yylval.str == "STRING_LITERAL"){
-				for(int i=0;yytext[i] != '\0';i++){
-					if(yytext[i] == '\n'){
-						printf("error at line %d: bad character \"%s\"\n", row-1, yytext );
-						exit(-1);
+	int n =  argc;
+	if(argc <= 2){
+		printf("Usage : ./bin/mycompiler -i ./test/test1.c -o output.txt\n -o tag and output file optional\n");
+	}else{
+		if(strcmp(argv[1], "-i")){
+			cout << "Invalid Format. Use -h flag for help\n";
+			return -1;
+		}else{
+			if(strcmp(argv[n-2],"-o")){ 
+				for(int i=2;i<n;i++){
+					if (!(yyin = fopen(argv[i], "r"))){
+							perror("Error: ");
+							return -1;
+					}
+					printf("%20s\t%20s\t%7s\t%7s\n", "TOKEN", "LEXEME", "ROW", "COLUMN");
+					while ( (val = yylex()) > 0 ) { 
+						if(yylval.str == "CONSTANT"){
+							printf("%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+						}else if(yylval.str == "STRING_LITERAL"){
+							for(int i=0;yytext[i] != '\0';i++){
+								if(yytext[i] == '\n'){
+									printf("error at line %d: bad character \"%s\"\n", row-1, yytext );
+									exit(-1);
+								}else{
+									continue;
+								}
+							}
+							printf("%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+						}
+						else{ 
+							printf("%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+						}
+					}
+					printf("\n\n*****************************************************************\n\n");
+				}
+			}else{
+				for(int i=2;i<n-2;i++){
+					if (!(yyout = fopen(argv[n-1], "w"))){
+							perror("Error: ");
+							return -1;
 					}else{
-						continue;
+						if (!(yyin = fopen(argv[i], "r"))){
+							perror("Error: ");
+							return -1;
+						}
+						fprintf(yyout, "%20s\t%20s\t%7s\t%7s\n", "TOKEN", "LEXEME", "ROW", "COLUMN");
+						while ( (val = yylex()) > 0 ) { 
+							if(yylval.str == "CONSTANT"){
+								fprintf(yyout, "%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+							}else if(yylval.str == "STRING_LITERAL"){
+								for(int i=0;yytext[i] != '\0';i++){
+									if(yytext[i] == '\n'){
+										fprintf(yyout,"error at line %d: bad character \"%s\"\n", row-1, yytext );
+										exit(-1);
+									}else{
+										continue;
+									}
+								}
+								fprintf(yyout, "%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+							}
+							else{ 
+								fprintf(yyout, "%20s\t%20s\t%7d\t%7d\n", yylval.str, yytext, row, column - yyleng);
+							}
+						}
+						fprintf(yyout,"\n\n*****************************************************************\n\n");
 					}
 				}
-				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
-			}
-			else{ 
-				cout << setw(15) << yylval.str << setw(15) << yytext << setw(5) << row << setw(5) << column - yyleng << endl;
 			}
 		}
 	}
-	else
-		printf("Usage: ./bin/mycompiler ./test/test1.txt\n");
 	return 0;
 }
