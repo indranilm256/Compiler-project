@@ -24,8 +24,8 @@ static void comment();
 %}
 
 %%
-"/*"[^*/]*"*/"			{}
-"//".*			{}
+"/*"[^*/]*"*/"			{count();}
+"//".*			{count();}
 "auto"			{ count(); yylval.str = "AUTO"; return(AUTO); }
 "break"			{ count(); yylval.str = "BREAK"; return(BREAK); }
 "case"			{ count(); yylval.str = "CASE"; return(CASE); }
@@ -193,7 +193,7 @@ int  main(int argc,char **argv){
 	int val;
 	int n =  argc;
 	if(argc <= 2){
-		printf("Usage : ./bin/mycompiler -i ./test/input.txt -o output.txt\n -o tag and output file optional\n");
+		printf("Usage : ./bin/mycompiler -i ./test/test1.c -o output.txt\n -o tag and output file optional\n");
 	}else{
 		if(strcmp(argv[1], "-i")){
 			cout << "Invalid Format. Use -h flag for help\n";
