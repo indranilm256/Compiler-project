@@ -120,8 +120,8 @@ L?\"(\\.|[^\\"])*\"	{ count(); yylval.str = "STRING_LITERAL"; return(STRING_LITE
 
 {WS}		{ count(); }
 ({L}|{D}|{WS})*"*/"			{ count(); yyerror("Illegal Comment");}
-.			{ yyerror("Undefined pattern");/* ignore bad characters */ }
-({SP}?\"([^"\\\n]|{ES})*)        { yyerror("Incomplete String");} 
+.			{ count(); yyerror("Undefined pattern");/* ignore bad characters */ }
+({SP}?\"([^"\\\n]|{ES})*)        { count(); yyerror("Incomplete String");} 
 
 
 %%
