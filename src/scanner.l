@@ -19,7 +19,7 @@ void yyerror (char *,...);
 void count();
 static int check_type();
 static void comment();
-static void comment_single_line();
+
 
 %}
 
@@ -131,10 +131,7 @@ int yywrap(void)
 	return(1);
 }
 
-static void comment_single_line(){
-	char c, c1;
-	while((c=yyinput()) != 0) unput(c);
-}
+
 
 static void comment()
 {
