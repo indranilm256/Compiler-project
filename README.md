@@ -13,13 +13,13 @@ Target Language : MIPS
 Test files are available in ./test directory.
 
 #### To test run the command:
-./bin/mycompiler -i ./test/input -o output.txt
+./bin/parser ./test/test1.c -o myAST.dot
 
 #### For example:
-./bin/mycompiler -i ./test/test1.c -o output.txt
+./bin/parser ./test/test1.c -o myAST.dot
 
-#### For multiple input files :
-./bin/mycompiler -i ./test/test1.c ./test/test2.c -o output.txt
+#### To display the graph:
+xdot myAST.dot / display myAST.dot
 
 ## References:
 
