@@ -1,6 +1,7 @@
-void main()  
-{  
-   printf(This will not print");
-
-   This is not a Comment*/
-}  
+int main(){
+   int a;
+   a = 0;
+   a += 1;
+   ++a;
+   a >>= 1;
+}

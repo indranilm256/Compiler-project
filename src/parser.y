@@ -98,76 +98,76 @@ unary_operator
 	;
 
 cast_expression
-	: unary_expression		{$$ = non_terminal_symbol_type1("cast_expression",NULL,$1,NULL);}
-	| '(' type_name ')' cast_expression		{$$ = non_terminal_symbol_type1("cast_expression",NULL,$2,$4);}
+	: unary_expression		{$$ = $1;}
+	| '(' type_name ')' cast_expression		{$$ = $4;}
 	;
 
 multiplicative_expression
-	: cast_expression		{$$ = non_terminal_symbol_type1("multiplicative_expression",NULL,$1,NULL);}
-	| multiplicative_expression '*' cast_expression		{$$ = non_terminal_symbol_type1("multiplicative_expression",$2,$1,$3);}
-	| multiplicative_expression '/' cast_expression		{$$ = non_terminal_symbol_type1("multiplicative_expression",$2,$1,$3);}
-	| multiplicative_expression '%' cast_expression		{$$ = non_terminal_symbol_type1("multiplicative_expression",$2,$1,$3);}
+	: cast_expression		{$$ = $1;}
+	| multiplicative_expression '*' cast_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
+	| multiplicative_expression '/' cast_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
+	| multiplicative_expression '%' cast_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 additive_expression
-	: multiplicative_expression		{$$ = non_terminal_symbol_type1("additive_expression",NULL,$1,NULL);}
-	| additive_expression '+' multiplicative_expression		{$$ = non_terminal_symbol_type1("additive_expression",$2,$1,$3);}
-	| additive_expression '-' multiplicative_expression		{$$ = non_terminal_symbol_type1("additive_expression",$2,$1,$3);}
+	: multiplicative_expression		{$$ = $1;}
+	| additive_expression '+' multiplicative_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
+	| additive_expression '-' multiplicative_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 shift_expression
-	: additive_expression		{$$ = non_terminal_symbol_type1("shift_expression",NULL,$1,NULL);}
-	| shift_expression LEFT_OP additive_expression		{$$ = non_terminal_symbol_type1("shift_expression",$2,$1,$3);}
-	| shift_expression RIGHT_OP additive_expression		{$$ = non_terminal_symbol_type1("shift_expression",$2,$1,$3);}
+	: additive_expression		{$$ = $1;}
+	| shift_expression LEFT_OP additive_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
+	| shift_expression RIGHT_OP additive_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 relational_expression
-	: shift_expression			{$$ = non_terminal_symbol_type1("relational_expression",NULL,$1,NULL);}
-	| relational_expression '<' shift_expression		{$$ = non_terminal_symbol_type1("relational_expression",$2,$1,$3);}
-	| relational_expression '>' shift_expression		{$$ = non_terminal_symbol_type1("relational_expression",$2,$1,$3);}
-	| relational_expression LE_OP shift_expression		{$$ = non_terminal_symbol_type1("relational_expression",$2,$1,$3);}
-	| relational_expression GE_OP shift_expression		{$$ = non_terminal_symbol_type1("relational_expression",$2,$1,$3);}
+	: shift_expression			{$$ = $1;}
+	| relational_expression '<' shift_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
+	| relational_expression '>' shift_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
+	| relational_expression LE_OP shift_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
+	| relational_expression GE_OP shift_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 equality_expression
-	: relational_expression		{$$ = non_terminal_symbol_type1("equality_expression",NULL,$1,NULL);}
-	| equality_expression EQ_OP relational_expression		{$$ = non_terminal_symbol_type1("equality_expression",$2,$1,$3);}
-	| equality_expression NE_OP relational_expression		{$$ = non_terminal_symbol_type1("equality_expression",$2,$1,$3);}
+	: relational_expression		{$$ = $1;}
+	| equality_expression EQ_OP relational_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
+	| equality_expression NE_OP relational_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 and_expression
-	: equality_expression		{$$ = non_terminal_symbol_type1("and_expression",NULL,$1,NULL);}
-	| and_expression '&' equality_expression		{$$ = non_terminal_symbol_type1("and_expression",$2,$1,$3);}
+	: equality_expression		{$$ = $1;}
+	| and_expression '&' equality_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 exclusive_or_expression
-	: and_expression			{$$ = non_terminal_symbol_type1("exclusive_or_expression",NULL,$1,NULL);}
-	| exclusive_or_expression '^' and_expression		{$$ = non_terminal_symbol_type1("exclusive_or_expression",$2,$1,$3);}
+	: and_expression			{$$ = $1;}
+	| exclusive_or_expression '^' and_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 inclusive_or_expression
-	: exclusive_or_expression		{$$ = non_terminal_symbol_type1("inclusive_or_expression",NULL,$1,NULL);}
-	| inclusive_or_expression '|' exclusive_or_expression		{$$ = non_terminal_symbol_type1("inclusive_or_expression",$2,$1,$3);}
+	: exclusive_or_expression		{$$ = $1;}
+	| inclusive_or_expression '|' exclusive_or_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 logical_and_expression
-	: inclusive_or_expression		{$$ = non_terminal_symbol_type1("logical_and_expression",NULL,$1,NULL);}
-	| logical_and_expression AND_OP inclusive_or_expression			{$$ = non_terminal_symbol_type1("logical_and_expression",$2,$1,$3);}
+	: inclusive_or_expression		{$$ = $1;}
+	| logical_and_expression AND_OP inclusive_or_expression			{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 logical_or_expression
-	: logical_and_expression		{$$ = non_terminal_symbol_type1("logical_or_expression",NULL,$1,NULL);}
-	| logical_or_expression OR_OP logical_and_expression		{$$ = non_terminal_symbol_type1("logical_or_expression",$2,$1,$3);}
+	: logical_and_expression		{$$ = $1;}
+	| logical_or_expression OR_OP logical_and_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 conditional_expression
-	: logical_or_expression			{$$ = non_terminal_symbol_type1("conditional_expression",NULL,$1,NULL);}
-	| logical_or_expression '?' expression ':' conditional_expression		{$$ = non_terminal_symbol_type1("conditional_expression",$2,$3,$5);}
+	: logical_or_expression			{$$ = $1;}
+	| logical_or_expression '?' expression ':' conditional_expression		{$$ = non_terminal_symbol_type1($2,NULL,$3,$5);}
 	;
 
 assignment_expression
-	: conditional_expression		{$$ = non_terminal_symbol_type1("assignment_expression",NULL,$1,NULL);}
-	| unary_expression assignment_operator assignment_expression		{$$ = non_terminal_symbol_type1("assignment_expression",$2,$1,$3);}
+	: conditional_expression		{$$ = $1;}
+	| unary_expression assignment_operator assignment_expression		{$$ = non_terminal_symbol_type1($2,NULL,$1,$3);}
 	;
 
 assignment_operator
@@ -242,9 +242,9 @@ type_specifier
 	;
 
 struct_or_union_specifier
-	: struct_or_union IDENTIFIER '{' struct_declaration_list '}'		{$$ = non_terminal_symbol_type1("struct_or_union_specifier", $2, $1, $4);}
+	: struct_or_union IDENTIFIER '{' struct_declaration_list '}'		{$$ = non_terminal_symbol_type1($2, NULL, $1, $4);}
 	| struct_or_union '{' struct_declaration_list '}'		{$$ = non_terminal_symbol_type1("struct_or_union_specifier", NULL, $1, $3);}
-	| struct_or_union IDENTIFIER		{$$ = non_terminal_symbol_type1("struct_or_union_specifier", $2,$1, NULL);}
+	| struct_or_union IDENTIFIER		{$$ = non_terminal_symbol_type1($2, NULL,$1, NULL);}
 	;
 	
 struct_or_union
@@ -280,9 +280,9 @@ struct_declarator
 	;
 
 enum_specifier
-	: ENUM '{' enumerator_list '}'		{$$ = non_terminal_symbol_type1("enum_specifier", $1, NULL, $3);}
-	| ENUM IDENTIFIER '{' enumerator_list '}'	{$$ = non_terminal_symbol_type3("enum_specifier", $1,$2, $4,NULL);}
-	| ENUM IDENTIFIER		{$$ = non_terminal_symbol_type3("enum_specifier",$1, $2,NULL, NULL);}
+	: ENUM '{' enumerator_list '}'		{$$ = non_terminal_symbol_type1( $1, NULL, NULL, $3);}
+	| ENUM IDENTIFIER '{' enumerator_list '}'	{$$ = non_terminal_symbol_type3($1, NULL,$2, $4,NULL);}
+	| ENUM IDENTIFIER		{$$ = non_terminal_symbol_type3($1, NULL, $2,NULL, NULL);}
 	;
 
 enumerator_list
@@ -365,18 +365,18 @@ direct_abstract_declarator
 	: '(' abstract_declarator ')'   {$$ = $2;}
 	| '[' ']'  						{$$ = terminal("[ ]");}
 	| '[' constant_expression ']' 	{$$ = $2;}
-	| direct_abstract_declarator '[' ']'	{$$ = non_terminal_symbol_type1("direct_abstract_declarator","[ ]",$1,NULL);}
+	| direct_abstract_declarator '[' ']'	{$$ = non_terminal_symbol_type1("[ ]",NULL,$1,NULL);}
 	| direct_abstract_declarator '[' constant_expression ']' 	{$$ = non_terminal_symbol_type1("direct_abstract_declarator",NULL, $1, $3);}
 	| '(' ')'	{$$ = terminal("( )");}		
 	| '(' parameter_type_list ')'	{$$ = $2;}
-	| direct_abstract_declarator '(' ')' 	{$$ = non_terminal_symbol_type1("direct_abstract_declarator","( )",$1,NULL);}
+	| direct_abstract_declarator '(' ')' 	{$$ = non_terminal_symbol_type1("( )",NULL,$1,NULL);}
 	| direct_abstract_declarator '(' parameter_type_list ')'	 {$$ = non_terminal_symbol_type1("direct_abstract_declarator", NULL, $1, $3);}
 	;
 
 initializer
 	: assignment_expression 		{$$ = $1;}
 	| '{' initializer_list '}' 		{$$ = $2;}
-	| '{' initializer_list ',' '}' 		{$$ = non_terminal_symbol_type1("initializer", $3, $2 ,NULL);}
+	| '{' initializer_list ',' '}' 		{$$ = non_terminal_symbol_type1( $3,NULL, $2 ,NULL);}
 	;
 
 initializer_list
@@ -395,7 +395,7 @@ statement
 
 labeled_statement
 	: IDENTIFIER ':' statement 	{ $$ = non_terminal_symbol_type1("labeled_statement", NULL, terminal($1), $3); }
-	| CASE constant_expression ':' statement 	{ $$ = non_terminal_symbol_type2("labeled_statement", terminal($1), $2, $4); }
+	| CASE constant_expression ':' statement 	 { $$ = non_terminal_symbol_type2("labeled_statement", terminal($1), $2, $4); } 
 	| DEFAULT ':' statement	 { $$ = non_terminal_symbol_type1("labeled_statement", NULL, terminal($1), $3); }
 	;
 
@@ -482,11 +482,11 @@ int  main(int argc,char **argv){
 			perror("Error: ");
 			return -1;
 		}
-		graphStart();
-		int k = yyparse();
-		if(k == 0){
-			graphEnd();
-		}
+		
+			graphStart();
+			int k= yyparse();
+			if(k==0)graphEnd();
+		
 	}
 	return 0;
 }
