@@ -2,5 +2,5 @@ int main()
 {
 }
 void kul();
-void kulkk();
-void kul();
+
+int a b ;

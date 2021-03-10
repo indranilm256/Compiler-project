@@ -483,8 +483,10 @@ int  main(int argc,char **argv){
 			return -1;
 		}
 		graphStart();
-		yyparse();
-		graphEnd();
+		int k = yyparse();
+		if(k == 0){
+			graphEnd();
+		}
 	}
 	return 0;
 }

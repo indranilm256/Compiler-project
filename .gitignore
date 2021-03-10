@@ -1,10 +1,4 @@
-# ignore everything
-*
-
-# except the following:
-
-!.gitignore
-!test/*
-!src/*
-!Makefile
-!README.md
+.vscode/*
+bin/*
+obj/*
+myAST.dot
