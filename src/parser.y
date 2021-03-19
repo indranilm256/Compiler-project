@@ -33,7 +33,7 @@ extern int yylineno;
 
 %token <str> TYPEDEF EXTERN STATIC AUTO REGISTER
 %token <str> CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
-%token <str> STRUCT UNION ENUM ELLIPSIS
+%token <str> STRUCT UNION ENUM ELLIPSIS PRINTF
 %type <str> assignment_operator
 %token <str> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 
@@ -391,6 +391,7 @@ statement
 	| selection_statement 	{$$ = $1;}
 	| iteration_statement 	{$$ = $1;}
 	| jump_statement 	{$$ = $1;}
+	| declaration_list {$$ = $1;}
 	;
 
 labeled_statement
@@ -485,7 +486,7 @@ int  main(int argc,char **argv){
 		
 			graphStart();
 			int k= yyparse();
-			if(k==0)graphEnd();
+			if(k==0) graphEnd();
 		
 	}
 	return 0;
