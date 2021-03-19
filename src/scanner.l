@@ -24,7 +24,8 @@ using namespace std;
 %}
 
 %%
-"/*"			{ comment(); }
+"/*"[^*/]*"*/"			{count();}
+"//".*			{count();}
 "auto"			{ count(); yylval.str = "AUTO"; return(AUTO); }
 "break"			{ count(); yylval.str = "BREAK"; return(BREAK); }
 "case"			{ count(); yylval.str = "CASE"; return(CASE); }
