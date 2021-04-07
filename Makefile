@@ -8,7 +8,7 @@ MYLIBRARY=$(CURDIR)
 
 all: $(BIN)/parser
 
-$(BIN)/parser: $(OBJ)/parser.tab.c $(OBJ)/lex.yy.c  $(OBJ)/nodes.o
+$(BIN)/parser: $(OBJ)/parser.tab.c $(OBJ)/lex.yy.c  $(OBJ)/nodes.o $(OBJ)/symbol_table.o $(OBJ)/type_check.o
 	@mkdir -p $(BIN)
 	$(CPP) -Wno-write-strings $^ -o $@ -I$(OBJ) -I$(SRC)
 
@@ -26,4 +26,4 @@ $(OBJ)/%.o: $(SRC)/%.cpp
 
 clean:
 	$(RM) -rf $(OBJ) $(BIN)
-	$(RM) output.txt  parser.output graph.gv myAST.dot
+	$(RM) output.txt  parser.output graph.gv myAST.dot *.csv
