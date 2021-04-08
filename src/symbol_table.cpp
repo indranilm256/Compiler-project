@@ -256,7 +256,7 @@ void printSymTables(symTable* a, string filename) {
   fclose(file);
 }
 void addKeywords(){ //keywords inserted into GST
-
+/*
 //-------------------inserting keywords-------------------------------------------
 vector<string> Keyword = {"auto","break","case","char","const",
                         "continue","default","do","double","else",
@@ -277,14 +277,10 @@ vector<string> Operator = {"...",">>==","<<==","+=","-=","*=","/=","%=","&=","^=
 for(int i=0;i<50;i++){
    insertSymbol(*curr,Operator[i],"Operator",8,0,1);
 }
-
+*/
 //////////////// basic printf, scanf, strlen :: to get the code running /////////
   insertSymbol(*curr,"printf","FUNC_void",8,0,1); //
   insertSymbol(*curr,"scanf","FUNC_int",8,0,1);
-  insertSymbol(*curr,"prints","FUNC_void",8,0,1); //
   insertSymbol(*curr,"strlen","FUNC_int",8,0,1); //
-  insertSymbol(*curr,"printn","FUNC_void",8,0,1); //
-  insertSymbol(*curr,"readFile","FUNC_int",8,0,1);
-  insertSymbol(*curr,"writeFile","FUNC_int",8,0,1);
-
+  
 }

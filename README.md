@@ -13,10 +13,12 @@ Target Language : MIPS
 Test files are available in ./test directory.
 
 #### To test run the command:
-./bin/parser ./test/test1.c -o myAST.dot
+./bin/parser ./test/testfile -o myAST.dot
 
 #### For example:
 ./bin/parser ./test/test1.c -o myAST.dot
+
+GST.csv is generated which is the global symbol table. Corresponding to every statement block a .csv file is generated with related name to the block(local symbol table).
 
 #### To display the graph:
 xdot myAST.dot / display myAST.dot

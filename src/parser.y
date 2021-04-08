@@ -61,24 +61,21 @@ extern int yylineno;
 %left <str> ',' '^' '|' ';' '{' '}' '[' ']' '(' ')' '+' '-' '%' '/' '*' '.' '>' '<' 
 %right <str> '&' '=' '!' '~' ':' '?'
 
-
-//%type<str>VOID CHAR SHORT INT LONG FLOAT DOUBLE SIGNED UNSIGNED struct_or_union_specifier enum_specifier TYPE_NAME
 %type <ptr> primary_expression postfix_expression unary_expression cast_expression multiplicative_expression additive_expression shift_expression relational_expression equality_expression and_expression exclusive_or_expression inclusive_or_expression logical_and_expression logical_or_expression conditional_expression constant_expression expression assignment_expression
 %type <ptr> argument_expression_list type_name initializer_list
 %type <ptr> unary_operator
 %type <ptr> declaration declaration_specifiers
 %type <ptr> init_declarator_list type_specifier type_qualifier storage_class_specifier
-%type <ptr> init_declarator  declarator struct_or_union_specifier struct_or_union enum_specifier initializer struct_declaration_list
+%type <ptr> init_declarator  declarator struct_or_union_specifier struct_or_union enum_specifier initializer struct_block_item_list
 %type <ptr> struct_declaration specifier_qualifier_list struct_declarator_list struct_declarator enumerator_list enumerator pointer 
 %type <ptr> direct_declarator type_qualifier_list parameter_type_list  parameter_list parameter_declaration identifier_list
-%type <ptr> abstract_declarator direct_abstract_declarator labeled_statement compound_statement expression_statement declaration_list statement_list
-%type <ptr> selection_statement iteration_statement jump_statement translation_unit external_declaration function_definition statement
+%type <ptr> abstract_declarator direct_abstract_declarator labeled_statement compound_statement expression_statement block_item_list declaration_list
+%type <ptr> selection_statement iteration_statement jump_statement translation_unit external_declaration function_definition statement block_item 
 %type <str> M1 M2 M3
 %%
 
 primary_expression
 	: IDENTIFIER			{$$ = mkleaf($1);
-							
 							char* a = primaryExpr($1);
 				    		if(a){
 									string s = a;
@@ -95,9 +92,7 @@ primary_expression
 								}
 							}
 	| CONSTANT				{
-							
 							long long int val = $1->iVal;
-							
 							
 							$$ = mkleaf($1->str);
 							char *a = constant($1->nType);
@@ -106,9 +101,11 @@ primary_expression
 							$$->node_type = s;
 							$$->is_init = 1;
 							$$->iVal = val;
-							$$->expr_type = 5;	
+							$$->expr_type = 5;
+							
 							}	
-	| STRING_LITERAL		{$$ = mkleaf($1);
+	| STRING_LITERAL		{
+							$$ = mkleaf($1);
 							string type = "char*";
 							$$->node_type = type;
 							$$->is_init = 1;
@@ -121,13 +118,14 @@ postfix_expression
 	| postfix_expression '[' expression ']'		{$$ = mknode("postfix_expression[expression]",(char*) NULL, $1, $3);
 												if($1->is_init && $3->is_init){$$->is_init = 1;}
 												char* a = postfixExpr($1->node_type, 1);
+												if(!isInt($3->node_type)){yyerror("Error: Array Index should be of type 'int' not '%s' ",$3->node_type.c_str());}
 												if(a){
 													string s = a;
 													$$->node_type = s;
 												}else{
 													yyerror("Error: Array indexing with indices more than its dimension");
 												}						
-												}
+																								}
 	| postfix_expression '(' ')'		{	$$ = $1;
 											$$->is_init = 1;
 											char* a = postfixExpr($1->node_type,2);
@@ -155,6 +153,8 @@ postfix_expression
 																	$$->node_type = s;
 																	if($1->expr_type==3){
 																		string funcArgs = funcArgList($1->node_key);
+																		int f=1;
+																		if($1->node_key == "printf"){f = 0;}
 																		char* b = new char();
 																		string tmp1 = currArguments;
 																		string tmp2 = funcArgs;
@@ -171,9 +171,16 @@ postfix_expression
 																			if(f1 != -1) tmp1 = tmp1.substr(f1+1);
 																			if(f2 != -1) tmp2 = tmp2.substr(f2+1);
 																			if(B == "...") break;
+	
 																			b = validAssign(A,B);
-																			if(b && !strcmp(b,"warning")){yyerror("Warning: Passing argumnet %d of \'%s\' from incompatible pointer type.\n Note : expected \'%s\' but argument is of type \'%s\'\n     \'%s %s %s \'",argnum,($1->node_key).c_str(),B.c_str(),A.c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());}
-																			else{yyerror("Error: Incompatible type for argument %d of \'%s\'.\n Note: expected \'%s\' but argument is of type \'%s\' \n        \'%s %s %s \'",argnum,($1->node_key).c_str(),B.c_str(),A.c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());} 
+																			if(b){
+																				if(!strcmp(b,"warning")){
+																					yyerror("Warning: Passing argument %d of \'%s\' from incompatible pointer type.\n Note : expected \'%s\' but argument is of type \'%s\'\n     \'%s %s %s \'",argnum,($1->node_key).c_str(),B.c_str(),A.c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());
+																					}
+																				}
+																			else{
+																				yyerror("Error: Incompatible type for argument %d of \'%s\'.\n Note: expected \'%s\' but argument is of type \'%s\' \n        \'%s %s %s \'",argnum,($1->node_key).c_str(),B.c_str(),A.c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());
+																				} 
 																			if(f1 != -1 && f2 != -1){continue;}
 																			else if(f2 != -1){
 																				if(!(tmp2==string("..."))) yyerror("Error: Too few arguments for the function %s\n    %s %s %s ",($1->node_key).c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());
@@ -281,24 +288,46 @@ multiplicative_expression
 	: cast_expression		{$$ = $1;}
 	| multiplicative_expression '*' cast_expression		{
 														char* a = multiplicativeExpr($1->node_type, $3->node_type, '*');
-														if(a && !strcmp(a,"int")){$$ = mknode("*int",(char*)NULL,$1,$3); $$->node_type = "long long";}
-														else if(a && !strcmp(a,"float")){$$ = mknode("*float",(char*)NULL,$1,$3); $$->node_type = "long double";}
-														else{$$ = mknode($2,(char*)NULL,$1,$3); yyerror("Error: Incompatible type of * operator");}
+														if(a){
+																if(!strcmp(a,"int")){
+																	$$ = mknode("*int",(char*)NULL,$1,$3); $$->node_type = "long long";
+																}
+																else if(!strcmp(a,"float")){
+																	$$ = mknode("*float",(char*)NULL,$1,$3); $$->node_type = "long double";
+																}
+															}
+														else{
+															$$ = mknode($2,(char*)NULL,$1,$3);
+															yyerror("Error: Incompatible type of * operator");
+														}
 														if($1->is_init && $3->is_init) $$->is_init = 1;
 														}
 	| multiplicative_expression '/' cast_expression		{
 														char* a = multiplicativeExpr($1->node_type, $3->node_type, '/');
-														if(a && !strcmp(a,"int")){$$ = mknode("/int",(char*)NULL,$1,$3); $$->node_type = "long long";}
-														else if(a && !strcmp(a,"float")){$$ = mknode("/float",(char*)NULL,$1,$3); $$->node_type = "long double";}
-														else{$$ = mknode($2,(char*)NULL,$1,$3); yyerror("Error: Incompatible type of / operator");}
+														if(a){
+																if(!strcmp(a,"int")){
+																	$$ = mknode("*int",(char*)NULL,$1,$3); $$->node_type = "long long";
+																}
+																else if(!strcmp(a,"float")){
+																	$$ = mknode("*float",(char*)NULL,$1,$3); $$->node_type = "long double";
+																}
+															}
+														else{
+															$$ = mknode($2,(char*)NULL,$1,$3);
+															yyerror("Error: Incompatible type of * operator");
+														}
 														if($1->is_init && $3->is_init) $$->is_init = 1;
 														}
 	| multiplicative_expression '%' cast_expression		{
 														$$ = mknode($2,(char*)NULL,$1,$3);
 														if($1->is_init && $3->is_init) $$->is_init = 1;
 														char* a = multiplicativeExpr($1->node_type, $3->node_type, '%');
-														if(a){$$->node_type = "long long";}
-														else{ yyerror("Error: Incompatible type of % operator");}
+														if(a){
+															$$->node_type = "long long";
+														}
+														else{ 
+															yyerror("Error: Incompatible type of % operator");
+														}
 														}
 	;
 
@@ -307,9 +336,10 @@ additive_expression
 	| additive_expression '+' multiplicative_expression		{
 															char* a = additiveExpr($1->node_type,$3->node_type,'+');
 															char* q = new char();
-															if(a){string s = a;
-															string p = string("+ ") + s;
-															strcpy(q,p.c_str());
+															if(a){
+																string s = a;
+																string p = string("+ ") + s;
+																strcpy(q,p.c_str());
 															}else{ q = "+";}
 															$$ = mknode(q,(char*)NULL,$1,$3);
 															if(a){ 
@@ -331,7 +361,7 @@ additive_expression
 															}else{ q = "-";}
 															$$ = mknode(q,(char*)NULL,$1,$3);
 															if(a){ 
-																string  s = a;
+																string s = a;
 																if(!strcmp(a,"int")) {$$->node_type=string("long long");}
 																else if(!strcmp(a,"float")) {$$->node_type=string("long double");}
 																else{$$->node_type = s;}
@@ -422,6 +452,7 @@ equality_expression
 	: relational_expression		{$$ = $1;}
 	| equality_expression EQ_OP relational_expression		
 	{
+		
 			$$ = mknode($2,(char*)NULL,$1,$3);
             char* a = equalityExpr($1->node_type,$3->node_type);
             if(a){ 
@@ -541,11 +572,19 @@ assignment_expression
 	: conditional_expression		{$$ = $1;}
 	| unary_expression assignment_operator assignment_expression		
 	{ 
-		//printf("line 543");
+		
 		$$ = mknode($2,(char*)NULL,$1,$3);
+		
+
     	char* c = assignmentExpr($1->node_type,$3->node_type,$2);
+	
         if(c){
+
             if(!strcmp(c,"true")){ $$->node_type = $1->node_type; }
+			if(!strcmp(c,"Warning")){
+			
+				 yyerror("Warning: Incompatible types when assigning type \'%s\' to \'%s\' ",($3->node_type).c_str(),($1->node_type).c_str());
+			}
             if(!strcmp(c,"warning")){ 
 				$$->node_type = $1->node_type;
                 yyerror("Warning: Assignment with incompatible pointer type"); 
@@ -632,21 +671,26 @@ init_declarator
 		} 
     }
 	| declarator '=' initializer		{
-		//printf("inside line 633");
 		char * k = NULL;
 		$$ = mknode("=",k, $1, $3);
+		
 		if($1->expr_type==1){ 
 			char *t=new char();
             strcpy(t,($1->node_type).c_str());
             char *key =new char();
             strcpy(key,($1->node_key).c_str());
+			
+			//cout << flag<<endl;
             if(scopeLookup($1->node_key)){ 
                 yyerror("Error: redeclaration of \'%s\'",key);
             }else if($1->node_type==string("void")){
-                    yyerror("Error: Variable or field \'%s\' declared void",key);
-                   }else { 
-					    insertSymbol(*curr,key,t,$1->size,0,0);
-					}
+				yyerror("Error: Variable or field \'%s\' declared void",key);
+            }else if((($1->node_type) == "char*" && ($3->node_type)!= "char*") || (($1->node_type) != "char*" && ($3->node_type) == "char*") ){
+				yyerror("Error: Type Mismatch: %s is  being assigned to %s", ($1->node_type).c_str(), ($3->node_type).c_str());	
+			}
+			else { 
+				insertSymbol(*curr,key,t,$1->size,0,0);
+			}
         } 
 	}
 	;
@@ -661,52 +705,52 @@ storage_class_specifier
 
 type_specifier
 	: VOID     {     
-					if(type==string(""))type = string($1);
-                	else type = type+string(" ")+string($1);
+					if(type==string(""))type = "void";
+                	else type = type+string(" ")+"void";
                 	$$=mkleaf($1);
               	}
 				  
   	| CHAR     {    
-		  			if(type==string(""))type = string($1);
-                   	else type = type+string(" ")+string($1);
+		  			if(type==string(""))type = "char";
+                   	else type = type+string(" ")+"char";
                   	$$=mkleaf($1);
 				    
 					 
               	}
   	| SHORT     {     
-		  			if(type==string(""))type = string($1);
-                   	else type = type+string(" ")+string($1);
+		  			if(type==string(""))type = "short";
+                   	else type = type+string(" ")+"short";
                   	$$=mkleaf($1);
               	}
   	| INT       {    // printf("ddsd");
-		  			if(type==string(""))type = string($1);
-                   	else type = type+string(" ")+string($1);
+		  			if(type==string(""))type = "int";
+                   	else type = type+string(" ")+"int";
                   	$$=mkleaf($1);
 					  
               	}
   	| LONG      {     
-		  			if(type==string(""))type = string($1);
-                   	else type = type+string(" ")+string($1);
+		  			if(type==string(""))type = "long";
+                   	else type = type+string(" ")+"long";
                   	$$=mkleaf($1);
               	}
   	| FLOAT     {     
-		  			if(type==string(""))type = string($1);
-                   	else type = type+string(" ")+string($1);
+		  			if(type==string(""))type = "float";
+                   	else type = type+string(" ")+"float";
                   	$$=mkleaf($1);
               	}
   	| DOUBLE    {     
-		  			if(type==string(""))type = string($1);
-                   	else type = type+string(" ")+string($1);
+		  			if(type==string(""))type = "double";
+                   	else type = type+string(" ")+"double";
                   	$$=mkleaf($1);
               	}
   	| SIGNED    {     
-		  			if(type==string(""))type = string($1);
-                   	else type = type+string(" ")+string($1);
+		  			if(type==string(""))type = "signed";
+                   	else type = type+string(" ")+"signed";
                   	$$=mkleaf($1);
               	}
   	| UNSIGNED  {     
-		  			if(type==string(""))type = string($1);
-                   	else type = type+string(" ")+string($1);
+		  			if(type==string(""))type = "unsigned";
+                   	else type = type+string(" ")+"unsigned";
                   	$$=mkleaf($1);
               	}
 	| struct_or_union_specifier		{$$ = $1;}
@@ -719,8 +763,8 @@ type_specifier
 	;
 
 struct_or_union_specifier
-	: struct_or_union IDENTIFIER '{' struct_declaration_list '}'		{$$ = mknode($2,(char*) NULL, $1, $4);}
-	| struct_or_union '{' struct_declaration_list '}'		{$$ = mknode("struct_or_union_specifier",(char*) NULL, $1, $3);}
+	: struct_or_union IDENTIFIER '{' struct_block_item_list '}'		{$$ = mknode($2,(char*) NULL, $1, $4);}
+	| struct_or_union '{' struct_block_item_list '}'		{$$ = mknode("struct_or_union_specifier",(char*) NULL, $1, $3);}
 	| struct_or_union IDENTIFIER		{$$ = mknode($2,(char*) NULL,$1, NULL);}
 	;
 	
@@ -729,9 +773,9 @@ struct_or_union
 	| UNION		{$$ = mkleaf($1);}
 	;
 
-struct_declaration_list
+struct_block_item_list
 	: struct_declaration		{$$ = $1;}
-	| struct_declaration_list struct_declaration		{$$ = mknode("struct_declaration_list",(char*) NULL, $1, $2);}
+	| struct_block_item_list struct_declaration		{$$ = mknode("struct_block_item_list",(char*) NULL, $1, $2);}
 	;
 
 struct_declaration
@@ -792,6 +836,7 @@ declarator
 
 direct_declarator
 	: IDENTIFIER		{
+		
 		$$ = mkleaf($1);
 		$$->expr_type=1;
 		string str = $1;
@@ -999,7 +1044,7 @@ statement
 	| selection_statement 	{$$ = $1;}
 	| iteration_statement 	{$$ = $1;}
 	| jump_statement 	{$$ = $1;}
-	| declaration_list {$$ = $1;}
+	//| block_item_list {$$ = $1;}
 	;
 
 labeled_statement
@@ -1008,70 +1053,49 @@ labeled_statement
 	| DEFAULT ':' statement	 { $$ = mknode("labeled_statement",(char*) NULL, mkleaf($1), $3); }
 	;
 
-compound_statement
-	: '{' '}'	 
-	{	isFunc=0;	
-		$$ = mkleaf("{ }");
-	} 
-	| M1 statement_list '}'	 
-	{	
-		if(blockSym){ 
-			string str1 = $1;
-        	string str2 = str1 + string(".csv");   
-            printSymTables(curr,str2);
-            updateSymTable(str1); 
-			blockSym--; 
-        }
-		$$ = $2;
-	}
-	| M1 declaration_list '}'
-	{	
-		if(blockSym){ 
-			string str1 = $1;
-        	string str2=str1+string(".csv");   
-            printSymTables(curr,str2);
-            updateSymTable(str1); 
-			blockSym--; 
-        }
-		$$ = $2;
-	}
-	| M1 declaration_list statement_list '}'
-	{ 
-		if(blockSym){ 
-			string str1 = $1;
-        	string str2=str1+string(".csv");   
-            printSymTables(curr,str2);
-            updateSymTable(str1); 
-			blockSym--; 
-        }	
-		$$ = mknode("compound_statement", (char*)NULL, $2 , $3);
-	}
-	;
 
-M1 
-    :  '{'       { 		
-						if(isFunc==0) {symNumber++;
-                        symFileName = funcName+string("Block")+to_string(symNumber);
-                        //scope=S_BLOCK;
-                        // makeSymTable(symFileName,scope,string("12345"));//change 12345 to flag
-                        char* c = new char();
-                        strcpy(c,symFileName.c_str());
-                        $$ = c;
-                        blockSym++;
+
+
+
+compound_statement
+	: '{' '}'   {isFunc=0;$$ = mkleaf("{ }"); $$->rVal = -5;}
+	| M1  block_item_list '}'  {if(blockSym){ string s($1);
+                                    s=s+string(".csv");
+                                    string u($1);
+                                    printSymTables(curr,s);
+                                    updateSymTable(u); blockSym--;
+                                 } $$ = $2;
+                               }
+	;
+M1
+    :  '{'       { if(isFunc==0) {symNumber++;
+                        symFileName = /*string("symTableFunc")+to_string(funcSym)*/funcName+string("Block")+to_string(symNumber);
+                         scope=S_BLOCK;
+                         makeSymTable(symFileName,scope,string("12345"));
+                        char * y=new char();
+                        strcpy(y,symFileName.c_str());
+                        $$ = y;
+                         blockSym++;
                         }
                        isFunc=0;
-              } 
-   
+              }
+
     ;
-declaration_list
-	: declaration 	{$$ = $1;}
-	| declaration_list declaration 	{$$ = mknode("declaration_list", (char*)NULL, $1, $2);}
+
+block_item_list
+	: block_item  {$$ = $1;}
+	| block_item_list  block_item  {$$ = mknode("block_item_list", (char*)NULL, $1, $2);}
 	;
 
-statement_list
-	: statement 	{$$ = $1;}
-	| statement_list statement 	{$$ = mknode("statement_list",(char*) NULL, $1, $2);}
+block_item
+	: declaration {$$ = $1;}
+	| statement {$$ = $1;}
 	;
+declaration_list
+	: declaration 	{$$ = $1;}
+	| declaration_list declaration 	{ $$ = mknode("declaration_list", (char*)NULL, $1, $2);}
+	;
+
 
 expression_statement
 	: ';' 	{$$ = mkleaf(";");}
@@ -1099,7 +1123,7 @@ jump_statement
 	| CONTINUE ';' 	{ $$ = mkleaf("continue");}
 	| BREAK ';' 	{ $$ = mkleaf("break");}
 	| RETURN ';' 	{ $$ = mkleaf("return");}
-	| RETURN expression ';' 	{ $$ = mknode("jump_statement",(char*) NULL, mkleaf($1),$2);}
+	| RETURN expression ';' 	{$$ = mknode("jump_statement",(char*) NULL, mkleaf("return"),$2);}
 	;
 
 translation_unit
@@ -1179,8 +1203,6 @@ M2
                 isFunc = 1;
                 funcSym++;
             	symFileName = funcName;
-				cout<<funcName<<endl;
-				cout<<funcType<<endl;
                 makeSymTable(symFileName,scope,funcType);
                 char* c= new char();
                 strcpy(c,symFileName.c_str());
@@ -1195,7 +1217,7 @@ extern char yytext[];
 extern int column;
 
 extern FILE *yyin;
-
+int k;
 int  main(int argc,char **argv){
 	int val;
 	if(argc <= 2){
@@ -1214,11 +1236,13 @@ int  main(int argc,char **argv){
 		funcName = string("GST");
 		stInitialize();
 		graphStart();
-		int k = yyparse();
+		yyparse();
 		if(k==0) graphEnd();
+		
 		symFileName = "GST.csv";
 		printSymTables(curr,symFileName);
 		printFuncArguments();
+		
 	}
 	return 0;
 }
@@ -1233,10 +1257,14 @@ void yyerror(char *s,...){
   vsnprintf(buffer,MAX_STR_LEN-1,s,args);
   va_end(args);
 
+  char sub[5];
+  memcpy(sub,s, 6 );
+  sub[5] = '\0';
+  if(!strcmp(sub,"Error")){k = 1;}
   
   int count = 1;
   if(s=="syntax error") count = 2;
-  fprintf(stderr,"%s : %d :: %s\n",filename,yylineno,buffer);
+  fprintf(stderr,"%s :: Line no. %d :: %s\n",filename,yylineno,buffer);
   duplicate=fopen("duplicate.txt","r");
   if ( duplicate != NULL )
   {

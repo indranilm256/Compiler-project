@@ -1,91 +1,79 @@
+D			[0-9]
+L			[a-zA-Z_]
+H			[a-fA-F0-9]
+E			[Ee][+-]?{D}+
+FS			(f|F|l|L)
+IS			(u|U|l|L)*
+WS			[ \t\v\n\f]
+SP  		(u8|u|U|L)
+ES  		(\\(['\?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+))
 %{
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
 #include "nodes.h"
 #include "parser.tab.h"
+
+
 void yyerror (char *,...);
 void get_int_info();
 void get_real_info();
-
-static int returnType(void);
-static void startComment(void);
+void count();
+static int check_type();
+static void comment();
+ 
+using namespace std;
 %}
-%e 1019
-%p 2807
-%n 371
-%a 1213
-%o 1117
 %option yylineno
-
-O   [0-7]
-D   [0-9]
-NZ  [1-9]
-L   [a-zA-Z_]
-A   [a-zA-Z_0-9]
-H   [a-fA-F0-9]
-HP  (0[xX])    
-E   ([Ee][+-]?{D}+)
-P   ([Pp][+-]?{D}+)
-FS  (f|F|l|L)
-IS  (((u|U)(l|L|ll|LL)?)|((l|L|ll|LL)(u|U)?))
-CP  (u|U|L)
-SP  (u8|u|U|L)
-ES  (\\(['\?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+))
-WS  [ \t\v\n\f]
 %%
 
 "/*"[^*/]*"*/"			{}
 "//".*			{}
-"auto"			{yylval.str = "AUTO"; return(AUTO); }
-"break"			{yylval.str = "BREAK"; return(BREAK); }
-"case"			{yylval.str = "CASE"; return(CASE); }
-"char"			{yylval.str = "CHAR"; return(CHAR); }
-"const"			{yylval.str = "CONST"; return(CONST); }
-"continue"		{yylval.str = "CONTINUE"; return(CONTINUE); }
-"default"		{yylval.str = "DEFAULT"; return(DEFAULT); }
-"do"			{yylval.str = "DO"; return(DO); }
-"double"		{yylval.str = "DOUBLE"; return(DOUBLE); }
-"else"			{yylval.str = "ELSE"; return(ELSE); }
-"enum"			{yylval.str = "ENUM"; return(ENUM); }
-"extern"		{yylval.str = "EXTERN"; return(EXTERN); }
-"float"			{yylval.str = "FLOAT"; return(FLOAT); }
-"for"			{yylval.str = "FOR"; return(FOR); }
-"goto"			{yylval.str = "GOTO"; return(GOTO); }
-"if"			{yylval.str = "IF"; return(IF); }
-"int"			{yylval.str = "INT"; return(INT); }
-"long"			{yylval.str = "LONG"; return(LONG); }
-"register"		{yylval.str = "REGISTER"; return(REGISTER); }
-"return"		{yylval.str = "RETURN"; return(RETURN); }
-"short"			{yylval.str = "SHORT"; return(SHORT); }
-"signed"		{yylval.str = "SIGNED"; return(SIGNED); }
-"sizeof"		{yylval.str = "SIZEOF"; return(SIZEOF); }
-"static"		{yylval.str = "STATIC"; return(STATIC); }
-"struct"		{yylval.str = "STRUCT"; return(STRUCT); }
-"switch"		{yylval.str = "SWITCH"; return(SWITCH); }
-"typedef"		{yylval.str = "TYPEDEF"; return(TYPEDEF); }
-"union"			{yylval.str = "UNION"; return(UNION); }
-"unsigned"		{yylval.str = "UNSIGNED"; return(UNSIGNED); }
-"void"			{yylval.str = "VOID"; return(VOID); }
-"volatile"		{yylval.str = "VOLATILE"; return(VOLATILE); }
-"while"			{yylval.str = "WHILE"; return(WHILE); }
+"auto"			{yylval.str = strdup(yytext); return(AUTO); }
+"break"			{yylval.str = strdup(yytext); return(BREAK); }
+"case"			{yylval.str = strdup(yytext); return(CASE); }
+"char"			{yylval.str = strdup(yytext); return(CHAR); }
+"const"			{yylval.str = strdup(yytext); return(CONST); }
+"continue"		{yylval.str = strdup(yytext); return(CONTINUE); }
+"default"		{yylval.str = strdup(yytext); return(DEFAULT); }
+"do"			{yylval.str = strdup(yytext); return(DO); }
+"double"		{yylval.str = strdup(yytext); return(DOUBLE); }
+"else"			{yylval.str = strdup(yytext); return(ELSE); }
+"enum"			{yylval.str = strdup(yytext); return(ENUM); }
+"extern"		{yylval.str = strdup(yytext); return(EXTERN); }
+"float"			{yylval.str = strdup(yytext); return(FLOAT); }
+"for"			{yylval.str = strdup(yytext); return(FOR); }
+"goto"			{yylval.str = strdup(yytext); return(GOTO); }
+"if"			{yylval.str = strdup(yytext); return(IF); }
+"int"			{yylval.str = strdup(yytext); return(INT); }
+"long"			{yylval.str = strdup(yytext); return(LONG); }
+"register"		{yylval.str = strdup(yytext); return(REGISTER); }
+"return"		{yylval.str = strdup(yytext); return(RETURN); }
+"short"			{yylval.str = strdup(yytext); return(SHORT); }
+"signed"		{yylval.str = strdup(yytext); return(SIGNED); }
+"sizeof"		{yylval.str = strdup(yytext); return(SIZEOF); }
+"static"		{yylval.str = strdup(yytext); return(STATIC); }
+"struct"		{yylval.str = strdup(yytext); return(STRUCT); }
+"switch"		{yylval.str = strdup(yytext); return(SWITCH); }
+"typedef"		{yylval.str = strdup(yytext); return(TYPEDEF); }
+"union"			{yylval.str = strdup(yytext); return(UNION); }
+"unsigned"		{yylval.str = strdup(yytext); return(UNSIGNED); }
+"void"			{yylval.str = strdup(yytext); return(VOID); }
+"volatile"		{yylval.str = strdup(yytext); return(VOLATILE); }
+"while"			{yylval.str = strdup(yytext); return(WHILE); }
 
-{L}{A}*                                 {yylval.str = strdup(yytext); return returnType(); }
+{L}({L}|{D})*		{ yylval.str = strdup(yytext); return IDENTIFIER; }
 
-{HP}{H}+{IS}?                           {sscanf(yytext+2,"%llx",&yylval.num->iVal);get_int_info();yylval.num->str = strdup(yytext);
-                                        return CONSTANT;}
-{NZ}{D}*{IS}?                           {sscanf(yytext,"%lld",&yylval.num->iVal);get_int_info(); yylval.num->str = strdup(yytext);return CONSTANT;}
-"0"{O}*{IS}?                            {sscanf(yytext,"%lld",&yylval.num->iVal);get_int_info(); yylval.num->str = strdup(yytext); return CONSTANT;}
-{CP}?"'"([^'\\\n]|{ES})+"'"             {get_int_info(); yylval.num->str = strdup(yytext); ;return CONSTANT;}
+0[xX]{H}+{IS}?		{sscanf(yytext+2,"%llx",&yylval.num->iVal);get_int_info();yylval.num->str = strdup(yytext);  return(CONSTANT); }
+0{D}+{IS}?		{sscanf(yytext,"%lld",&yylval.num->iVal);get_int_info();yylval.num->str = strdup(yytext);  return(CONSTANT); }
+{D}+{IS}?		{sscanf(yytext,"%lld",&yylval.num->iVal);get_int_info();yylval.num->str = strdup(yytext);  return(CONSTANT); }
+L?'(\\.|[^\\'])+'	{get_int_info();yylval.num->str = strdup(yytext);  return(CONSTANT); }
 
-{D}+{E}{FS}?                            {yylval.num->str = strdup(yytext);get_real_info(); return CONSTANT;}
-{D}*"."{D}+{E}?{FS}?                    {yylval.num->str = strdup(yytext);get_real_info(); return CONSTANT;}
-{D}+"."{E}?{FS}?                        {yylval.num->str = strdup(yytext);get_real_info(); return CONSTANT;}
-{HP}{H}+{P}{FS}?                        {yylval.num->str = strdup(yytext);get_real_info(); return CONSTANT;}
-{HP}{H}*"."{H}+{P}{FS}?                 {yylval.num->str = strdup(yytext);get_real_info(); return CONSTANT;}
-{HP}{H}+"."{P}{FS}?                     {yylval.num->str = strdup(yytext);get_real_info(); return CONSTANT;}
+{D}+{E}{FS}?		{yylval.num->str = strdup(yytext);get_real_info();  return(CONSTANT); }
+{D}*"."{D}+({E})?{FS}?	{yylval.num->str = strdup(yytext);get_real_info(); return(CONSTANT); }
+{D}+"."{D}*({E})?{FS}?	{yylval.num->str = strdup(yytext);get_real_info(); return(CONSTANT); }
 
-({SP}?\"([^"\\\n]|{ES})*\"{WS}*)+       {yylval.str=strdup(yytext); return STRING_LITERAL;} 
+L?\"(\\.|[^\\"])*\"	{ yylval.str = "STRING_LITERAL"; return(STRING_LITERAL); }
 
 "..."					{ yylval.str=strdup(yytext);return ELLIPSIS; }
 ">>="					{ yylval.str=strdup(yytext);return RIGHT_ASSIGN; }
@@ -140,9 +128,12 @@ WS  [ \t\v\n\f]
 ({SP}?\"([^"\\\n]|{ES})*)        { yyerror("Incomplete String");} 
 %%
 
-int yywrap(void) {
-  return 1;
-} 
+int yywrap(void)
+{
+	return(1);
+}
+
+
 void get_int_info(){
    int i;
    yylval.num->nType = yylval.num->is_unsigned=1;
@@ -153,10 +144,7 @@ void get_int_info(){
                 yylval.num->nType++;
        else
              break;
-
-   }
-
-
+    }
 }
 void get_real_info(){
    int i=yyleng-1;
@@ -167,31 +155,8 @@ void get_real_info(){
                 yylval.num->nType = N_LONGDOUBLE;
        else
                yylval.num->nType =N_DOUBLE;
-
-
-
-
-}
-
-static void startComment(void)
-{
-    int c;
-
-    while ((c = yyinput()) != EOF){
-        if (c == '*')
-        {
-            while ((c = yyinput()) == '*') ;
-
-
-            if (c == '/')
-                return;
-
-            if (c == -1)
-                break;
-        }
     }
-    yyerror("unterminated comment");
-}
+
 static int returnType(void)
 {
 
@@ -199,4 +164,3 @@ static int returnType(void)
 
 }
    
-

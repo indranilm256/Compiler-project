@@ -171,7 +171,7 @@ char *unaryExpr(string op, string type)
 }
 
 char *multiplicativeExpr(string type1, string type2, char op)
-{ // multiplicative_expression '*' cast_expression   | multiplicative_expression '/' cast_expression  |  multiplicative_expression '%' cast_expression
+{ // multiplicative_expression '*' cast_expression   | multiplicative_expression '/' cast_expression  |  multiplicative_expression '%' flag_expression
     char *a = new char();
     if ((isInt(type1) || isFloat(type1)) && (isInt(type2) || isFloat(type2)))
     {
@@ -355,60 +355,67 @@ char *conditionalExpr(string type1, string type2)//logical_or ?  expression ':' 
 
 char *validAssign(string type1, string type2) //postfix_expression '(' argument_expression_list ')' | designation M initializer | initializer_list ',' M designation initializer | initializer_list ',' M  initializer 
 {
-    //printf("in validAssign function\n");
     char *a = new char();
-    if (isInt(type2) && (type1[type1.size() - 1] == '*')){
+    if(type1 == type2){return "true";;}
+    if(type2 == "char" && isInt(type1)){return "true";;}
+    else if(type2 == "int" && (type1 != "char")){
+         a = "Warning";
+        return a;;
+    }else  if(type2 == "long" && (type1 != "int" && type1 != "char")){
+         a = "Warning";
+        return a;;
+    }else  if(type2 == "long long" && (type1 != "int" && type1 != "char" && type1 != "long")){
+         a = "Warning";
+        return a;;
+    }else  if(type2 == "float" && (type1 != "int" && type1 != "char" && type1 != "long" && type1 != "long long")){
+         a = "Warning";
+        return a;;
+    }else  if(type2 == "double" && (type1 != "int" && type1 != "char" && type1 != "long" && type1 != "long long" && type1 != "float")){
+         a = "Warning";
+        return a;;
+    }else  if(type2 == "long double" && (type1 != "int" && type1 != "char" && type1 != "long" && type1 != "long long" && type1 != "float" && type1 != "double")){
+         a = "Warning";
+        return a;;
+    }
+    else if (isInt(type2) && (type1[type1.size() - 1] == '*')){
         a = "warning";
         return a;
     }
-    if (isInt(type1) && (type2[type2.size() - 1] == '*'))
+    else if (isInt(type1) && (type2[type2.size() - 1] == '*'))
     {
+        // cout << "367" << endl;
         a = "warning";
         return a;
     }
-    // if (type1 == string("char"))
-    //     type1 = string("long long");
-    // if (isInt(type1))
-    //     type1 = string("long double");
-    // if (type2 == string("char"))
-    //     type2 = string("long long");
-    // if (isInt(type2))
-    //     type2 = string("long double");
 
-    if(isFloat(type2) && type1==string("char"))return NULL;
-
-    if((isInt(type1)||type1==string("char"))&&(isFloat(type2) ||isInt(type2)))
+    else if(isFloat(type2) && type1==string("char"))return NULL;
+    else if(isFloat(type1) && type2==string("char"))return NULL;
+    else if((isInt(type1)||type1==string("char"))&&(isFloat(type2) ||isInt(type2)))
     {
+
         a = "true";
         return a;
     }
     
-    if((isInt(type1)||isFloat(type1))&&(isFloat(type2) ||isFloat(type1)))
+    else if((isInt(type1)||isFloat(type1))&&(isFloat(type2) ||isInt(type2)))
+    {
+       
+        a = "true";
+        return a;
+    }
+
+    else if (type1 == string("void*") && (type2[type2.size() - 1] == '*'))
     {
         a = "true";
         return a;
     }
-    // if (isFloat(type1) && isFloat(type2))
-    // {
-    //     a = "true";
-    //     return a;
-    // }
-    if (type1 == string("void*") && (type2[type2.size() - 1] == '*'))
+    else if (type2 == string("void*") && (type1[type1.size() - 1] == '*'))
     {
+       
         a = "true";
         return a;
     }
-    if (type2 == string("void*") && (type1[type1.size() - 1] == '*'))
-    {
-        a = "true";
-        return a;
-    }
-    if (type1 == type2)
-    {
-        a = "true";
-        return a;
-    }
-    if ((type2[type2.size() - 1] == '*') && (type1[type1.size() - 1] == '*')) //pointer but not similar type
+    else if ((type2[type2.size() - 1] == '*') && (type1[type1.size() - 1] == '*')) //pointer but not similar type
     {
         a = "warning";
         return a;
@@ -418,6 +425,7 @@ char *validAssign(string type1, string type2) //postfix_expression '(' argument_
 
 char *assignmentExpr(string type1, string type2, char *op) // assignment expression valid or not
 {
+   
     char *a = new char();
     if (!strcmp(op, "=")) // op = '='
     {
@@ -465,3 +473,22 @@ char *assignmentExpr(string type1, string type2, char *op) // assignment express
     }
     return NULL;
 }
+/*
+int typedecide(string type1, string type2){
+    if(type1 == type2){return "true";}
+    if(type2 == "char" && isInt(type1)){return "true";}
+    else if(type2 == "int" && (type1 != "char")){
+        return "true";
+    }else  if(type2 == "long" && (type1 != "int" && type1 != "char")){
+        return "true";
+    }else  if(type2 == "long long" && (type1 != "int" && type1 != "char" && type1 != "long")){
+        return "true";
+    }else  if(type2 == "float" && (type1 != "int" && type1 != "char" && type1 != "long" && type1 != "long long")){
+        return 1;
+    }else  if(type2 == "double" && (type1 != "int" && type1 != "char" && type1 != "long" && type1 != "long long" && type1 != "float")){
+        return 1;
+    }else  if(type2 == "long double" && (type1 != "int" && type1 != "char" && type1 != "long" && type1 != "long long" && type1 != "float" && type1 != "double")){
+        return 1;
+    }
+    return 0;
+}*/
