@@ -2,12 +2,6 @@
 
 extern FILE *digraph;
 
-int ID_for_Node() {
-  static int num = 0;
-  num += 1;
-  return num;
-}
-
 void graphStart() {
   fprintf(digraph, "digraph G {\n");
   fprintf(digraph, "\tordering=out;\n");
@@ -16,74 +10,66 @@ void graphStart() {
 void graphEnd() {
   fprintf(digraph, "}\n");
 }
- 
-node* makeNewNode(char *str){
-  node *new_node = new node;
-  new_node->node_name = str;
-  new_node->node_id = ID_for_Node();
-  return new_node;
+
+int ID_for_Node() {
+  static int num = 0;
+  num += 1;
+  return num;
 }
 
-void labelMaker(int x,const char* str){
-  fprintf(digraph, "\t%lu [label=\"%s\"];\n", x, str);
-}
-void edgeMaker(int node_id,int n){
-  fprintf(digraph, "\t%lu -> %lu;\n", node_id, n);
-}
-
-node *mkleaf(char *str) {
+void Node :: mkleaf() {
   //cout << "nnn\n";
-  node* new_node = makeNewNode(str);
+  //Node* new_node = makeNewNode(str);
   //cout << "jjj\n";
   // checking '\n' character
   // the loopr run til len because the last character is ""
   stringstream ss;
-  for(int i=0; i < new_node->node_name.size(); ++i){
-    if(new_node->node_name[i]=='\\'){
+  for(int i=0; i < node_name.size(); ++i){
+    if(node_name[i]=='\\'){
       char tmp = '\\';
       ss << tmp;
     }
-    ss << new_node->node_name[i];
+    ss << node_name[i];
   }
-  new_node->node_name = ss.str();
+  node_name = ss.str();
 
   // printing sting token
-  if(str[0] == '"'){
-    new_node->node_name = new_node->node_name.substr(1, new_node->node_name.size()-2);
-    labelMaker(new_node->node_id,new_node->node_name.c_str() );
+  if(node_name[0] == '"'){
+    node_name = node_name.substr(1, node_name.size()-2);
+    //fprintf(digraph, "\t%d [label=\"%s\"];\n",node_id,node_name.c_str() );
   }
-  else{
-    labelMaker(new_node->node_id,new_node->node_name.c_str() );
-  }
-  return new_node;
+  // else{
+  //   fprintf(digraph, "\t%d [label=\"%s\"];\n",node_id,node_name.c_str() );
+  // }
+  fprintf(digraph, "\t%d [label=\"%s\"];\n", node_id, node_name.c_str());
+  //return new_node;
 }
 
-node *mknode(char *str,char *opr, node *l, node *r) {
-  node* new_node = makeNewNode(str);
+void Node :: mknode(char *opr, Node *l, Node *r) {
+  //Node* new_node = makeNewNode(str);
   int opr_id = ID_for_Node();
-  char *opr_str = opr;
+  //char *opr_str = opr;
   if(opr){
-    labelMaker(opr_id,opr_str);
+    fprintf(digraph, "\t%d [label=\"%s\"];\n", opr_id,opr);
   }
-  labelMaker(new_node->node_id, new_node->node_name.c_str());
-  if(l) edgeMaker(new_node->node_id,l->node_id);
-  if(opr) edgeMaker(new_node->node_id,opr_id);
-  if(r)edgeMaker(new_node->node_id,r->node_id);
-  return new_node;
+  fprintf(digraph, "\t%d [label=\"%s\"];\n", node_id, node_name.c_str());
+  if(l) fprintf(digraph, "\t%d -> %d;\n", node_id, l->node_id);
+  if(opr)fprintf(digraph, "\t%d -> %d;\n", node_id, opr_id);
+  if(r)fprintf(digraph, "\t%d -> %d;\n", node_id, r->node_id);
+  //return new_node;
 }
 
-node *mknode(char *str,node *l,node *m, node *r) {
-  node* new_node = makeNewNode(str);
-  labelMaker(new_node->node_id, new_node->node_name.c_str());
-  if(l) edgeMaker(new_node->node_id,l->node_id);
-  if(m) edgeMaker(new_node->node_id,m->node_id);
-  if(r)edgeMaker(new_node->node_id,r->node_id);
-  return new_node;
+void Node :: mknode(Node *l,Node *m, Node *r) {
+  //Node* new_node = makeNewNode(str);
+  fprintf(digraph, "\t%d [label=\"%s\"];\n", node_id, node_name.c_str());
+  if(l) fprintf(digraph, "\t%d -> %d;\n", node_id, l->node_id);
+  if(m) fprintf(digraph, "\t%d -> %d;\n", node_id, m->node_id);
+  if(r)fprintf(digraph, "\t%d -> %d;\n", node_id, r->node_id);
+  //return new_node;
 }
 
-
-node *mknode(char *str,char *opr1,char *opr3, node *l,char *opr2) {
-  node* new_node = makeNewNode(str);
+void Node :: mknode(char *opr1,char *opr3, Node *l,char *opr2) {
+  /*Node* new_node = makeNewNode(str);
   int opr1_id = ID_for_Node();
   char *opr1_str = opr1;
   int opr3_id = ID_for_Node();
@@ -92,60 +78,95 @@ node *mknode(char *str,char *opr1,char *opr3, node *l,char *opr2) {
   char *opr2_str = opr2;
   if(opr1){
 
-    labelMaker(opr1_id, opr1_str);
+    fprintf(digraph, "\t%d [label=\"%s\"];\n",opr1_id, opr1_str);
   }
   if(opr3){
 
-    labelMaker( opr3_id, opr3_str);
+    fprintf(digraph, "\t%d [label=\"%s\"];\n", opr3_id, opr3_str);
   }
 
   if(opr2){
 
-    labelMaker(opr2_id, opr2_str);
+    fprintf(digraph, "\t%d [label=\"%s\"];\n",opr2_id, opr2_str);
   }
-  labelMaker(new_node->node_id, new_node->node_name.c_str());
-  if(opr1) edgeMaker(new_node->node_id, opr1_id);
-  if(opr3) edgeMaker(new_node->node_id, opr3_id);
-  if(l)edgeMaker(new_node->node_id, l->node_id);
-  if(opr2) edgeMaker(new_node->node_id, opr2_id);
-  return new_node;
+  fprintf(digraph, "\t%d [label=\"%s\"];\n",node_id, node_name.c_str());
+  if(opr1) fprintf(digraph, "\t%d -> %d;\n",node_id, opr1_id);
+  if(opr3) fprintf(digraph, "\t%d -> %d;\n",node_id, opr3_id);
+  if(l)fprintf(digraph, "\t%d -> %d;\n",node_id, l->node_id);
+  if(opr2) fprintf(digraph, "\t%d -> %d;\n",node_id, opr2_id);
+  return new_node;*/
+  //Node* new_node = makeNewNode(str);
+  int opr1_id = ID_for_Node();
+ // char *opr1_str = opr1;
+  int opr2_id = ID_for_Node();
+ // char *opr3_str = opr3;
+  int opr3_id = ID_for_Node();
+  //char *opr2_str = opr2;
+  if(opr1){
+    fprintf(digraph, "\t%d [label=\"%s\"];\n",opr1_id, opr1);
+  }
+  if(opr3){
+    fprintf(digraph, "\t%d [label=\"%s\"];\n", opr3_id, opr3);
+  }
+  if(opr2){
+    fprintf(digraph, "\t%d [label=\"%s\"];\n",opr2_id, opr2);
+  }
+  fprintf(digraph, "\t%d [label=\"%s\"];\n",node_id, node_name.c_str());
+  if(opr1) fprintf(digraph, "\t%d -> %d;\n",node_id, opr1_id);
+  if(opr3) fprintf(digraph, "\t%d -> %d;\n",node_id, opr3_id);
+  if(l)fprintf(digraph, "\t%d -> %d;\n",node_id, l->node_id);
+  if(opr2) fprintf(digraph, "\t%d -> %d;\n",node_id, opr2_id);
 }
 
-node *mknode(char *str,node *a1,node *a2, node *a3, node*a4, char* opr) {
-  node* new_node = makeNewNode(str);
+void Node :: mknode(Node *a1,Node *a2, Node *a3, Node*a4, char* opr) {
+  /*Node* new_node = makeNewNode(str);
   int opr_id = ID_for_Node();
   char *opr_str = opr;
   if(opr){
-    labelMaker(opr_id,opr_str);
+    fprintf(digraph, "\t%d [label=\"%s\"];\n",opr_id,opr_str);
   }
-  labelMaker(new_node->node_id, new_node->node_name.c_str());
-  if(a1) edgeMaker(new_node->node_id,a1->node_id);
-  if(a2) edgeMaker(new_node->node_id,a2->node_id);
-  if(a3) edgeMaker(new_node->node_id,a3->node_id);
-  if(a4) edgeMaker(new_node->node_id,a4->node_id);
-  if(opr) edgeMaker(new_node->node_id,opr_id);
-  return new_node;
+  fprintf(digraph, "\t%d [label=\"%s\"];\n",node_id, node_name.c_str());
+  if(a1) fprintf(digraph, "\t%d -> %d;\n",node_id,a1->node_id);
+  if(a2) fprintf(digraph, "\t%d -> %d;\n",node_id,a2->node_id);
+  if(a3) fprintf(digraph, "\t%d -> %d;\n",node_id,a3->node_id);
+  if(a4) fprintf(digraph, "\t%d -> %d;\n",node_id,a4->node_id);
+  if(opr) fprintf(digraph, "\t%d -> %d;\n",node_id,opr_id);
+  return new_node;*/
+  int opr_id = ID_for_Node();
+  if(opr){
+    fprintf(digraph, "\t%d [label=\"%s\"];\n",opr_id,opr);
+  }
+  fprintf(digraph, "\t%d [label=\"%s\"];\n",node_id, node_name.c_str());
+  if(a1) fprintf(digraph, "\t%d -> %d;\n",node_id,a1->node_id);
+  if(a2) fprintf(digraph, "\t%d -> %d;\n",node_id,a2->node_id);
+  if(a3) fprintf(digraph, "\t%d -> %d;\n",node_id,a3->node_id);
+  if(a4) fprintf(digraph, "\t%d -> %d;\n",node_id,a4->node_id);
+  if(opr) fprintf(digraph, "\t%d -> %d;\n",node_id,opr_id);
 }
 
-node *mknode(char *str,node *a1,node *a2, node *a3, node*a4, node* a5) {
-  node* new_node = makeNewNode(str);
-  labelMaker(new_node->node_id, new_node->node_name.c_str());
-  if(a1) edgeMaker(new_node->node_id, a1->node_id);
-  if(a2) edgeMaker(new_node->node_id,a2->node_id);
-  if(a3)edgeMaker(new_node->node_id,  a3->node_id);
-  if(a4) edgeMaker(new_node->node_id, a4->node_id);
-  if(a5) edgeMaker(new_node->node_id, a5->node_id);
-  return new_node;
+void Node :: mknode(Node *a1,Node *a2, Node *a3, Node*a4, Node* a5) {
+  fprintf(digraph, "\t%d [label=\"%s\"];\n",  node_id, node_name.c_str());
+  if(a1)fprintf(digraph, "\t%d -> %d;\n", node_id, a1->node_id);
+  if(a2)fprintf(digraph, "\t%d -> %d;\n", node_id, a2->node_id);
+  if(a3)fprintf(digraph, "\t%d -> %d;\n", node_id, a3->node_id);
+  if(a4)fprintf(digraph, "\t%d -> %d;\n", node_id, a4->node_id);
+  if(a5)fprintf(digraph, "\t%d -> %d;\n", node_id, a5->node_id);
 }
-node *mknode(char *str, node *a, int flag) { 
-  node* new_node = makeNewNode(str);
-  labelMaker( new_node->node_id,new_node->node_name.c_str() );
+void Node :: mknode(Node *a, int flag) { 
+  /*Node* new_node = makeNewNode(str);
+  fprintf(digraph, "\t%d [label=\"%s\"];\n", node_id,node_name.c_str() );
   int bracketId = ID_for_Node();
-  if(flag){fprintf(digraph, "\t%lu [label=\"[ ]\"];\n", bracketId);}
-  else{fprintf(digraph, "\t%lu [label=\"( )\"];\n", bracketId);}
-  if(a) edgeMaker(new_node->node_id, a->node_id);
-  edgeMaker(new_node->node_id, bracketId);
-  return new_node;
+  if(flag){fprintf(digraph, "\t%d [label=\"[ ]\"];\n", bracketId);}
+  else{fprintf(digraph, "\t%d [label=\"( )\"];\n", bracketId);}
+  if(a) fprintf(digraph, "\t%d -> %d;\n",node_id, a->node_id);
+  fprintf(digraph, "\t%d -> %d;\n",node_id, bracketId);
+  return new_node;*/
+    fprintf(digraph, "\t%d [label=\"%s\"];\n", node_id, node_name.c_str());
+    int bracket_id = ID_for_Node();
+    if(flag){ fprintf(digraph, "\t%d [label=\"[ ]\"];\n", bracket_id);}
+    else{ fprintf(digraph, "\t%d [label=\"( )\"];\n", bracket_id);}
+    if(a) fprintf(digraph, "\t%d -> %d;\n", node_id, a->node_id);
+    fprintf(digraph, "\t%d -> %d;\n", node_id,bracket_id);
 }
 
 
@@ -154,3 +175,5 @@ node *mknode(char *str, node *a, int flag) {
 
 
 
+
+  
