@@ -3,20 +3,29 @@
 #include <sstream>
 #include <list>
 #include <stdio.h>
+#include "3ac.h"
 
 using namespace std;
 typedef struct {
-  long long size;
-  long long int iVal;
-  long double rVal;
-  char* str;
-  char cVal;
-  int is_init;
-  int expr_type;
-  string node_name;
-  string node_type;
-  string node_key;
-  int node_id;
+   long long size;
+   long long int iVal;
+   long double rVal;
+   char* str;
+   char cVal;
+   int is_init;
+   int expr_type;
+   string node_name;
+   string node_type;
+   string node_key;
+   int node_id;
+   //3AC
+   qid place;
+   list<int> truelist;
+   list<int> nextlist;
+   list<int> falselist;
+   list<int> breaklist;
+   list<int> continuelist;
+   list<int> caselist;
 } node;
 
 enum ntype {

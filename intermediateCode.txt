@@ -1,0 +1,25 @@
+
+[0]: func swap begin:
+
+    [1]:               =          __t1__                               b
+    [2]:               =          __t2__                               a
+
+[3]: func end
+
+
+[4]: func main begin:
+
+    [5]:           + int               1               2          __t3__
+    [6]:           param               a                                
+    [7]:           param               b                                
+    [8]:        refParam                                          __t4__
+    [9]:            CALL            swap               3          __t4__
+    [10]:           param  STRING_LITERAL                                
+    [11]:           param               a                                
+    [12]:           param               b                                
+    [13]:        refParam                                          __t5__
+    [14]:            CALL          printf               4          __t5__
+    [15]:          RETURN               0                                
+
+[16]: func end
+
