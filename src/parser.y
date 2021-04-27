@@ -12,7 +12,6 @@ using namespace std;
 
 #include "type_check.h"
 #include "nodes.h"
-
 extern FILE *yyin, *yyout; 
 int yylex(void);
 void yyerror(char *s,...);
@@ -38,7 +37,7 @@ int tempodd, tempeven;
 %union {
 	int number; 
   	char *str;
-  	node *ptr;
+  	Node *ptr;
 	exprNode* expr;
   	numb* num;
 };
@@ -78,7 +77,9 @@ int tempodd, tempeven;
 %%
 
 primary_expression
-	: IDENTIFIER			{$$ = mkleaf($1);
+	: IDENTIFIER			{Node* n = new Node($1);
+							n->mkleaf();
+							$$ = n;
 							char* a = primaryExpr($1);
 				    		if(a){
 									string s = a;
@@ -101,7 +102,9 @@ primary_expression
 	| CONSTANT				{
 							long long int val = $1->iVal;
 							
-							$$ = mkleaf($1->str);
+							Node* n = new Node($1->str);
+							n->mkleaf();
+							$$ = n;
 							char *a = constant($1->nType);
 							
 							string s = a;							
@@ -116,7 +119,9 @@ primary_expression
 							
 							}	
 	| STRING_LITERAL		{
-							$$ = mkleaf($1);
+							Node* n = new Node($1);
+							n->mkleaf();
+							$$ = n;
 							string type = "char*";
 							$$->node_type = type;
 							$$->is_init = 1;
@@ -130,7 +135,9 @@ primary_expression
 
 postfix_expression
 	: primary_expression	{$$ = $1;}
-	| postfix_expression '[' expression ']'		{$$ = mknode("postfix_expression[expression]",(char*) NULL, $1, $3);
+	| postfix_expression '[' expression ']'		{Node* n = new Node("postfix_expression[expression]");
+												n->mknode((char*) NULL, $1, $3);
+												$$ = n;
 												if($1->is_init && $3->is_init){$$->is_init = 1;}
 												char* a = postfixExpr($1->node_type, 1);
 												if(!isInt($3->node_type)){yyerror("Error: Array Index should be of type 'int' not '%s' ",$3->node_type.c_str());}
@@ -179,7 +186,9 @@ postfix_expression
 										 	currArguments = empty;
 										} 			
 	| postfix_expression '(' argument_expression_list ')'		{
-																$$ = mknode("postfix_expression",(char*) NULL, $1, $3);
+																Node* n = new Node("postfix_expression");
+																n->mknode((char*) NULL, $1, $3);
+																$$ = n;
 																if($3->is_init) $$->is_init = 1;
 																char* a = postfixExpr($1->node_type, 3);
 																if(a){
@@ -248,8 +257,16 @@ postfix_expression
 										 						currArguments = empty;
 															}
 															
-	| postfix_expression PTR_OP IDENTIFIER	{$$ = mknode("postfix_expression",$2,$1,mkleaf($3));}
-	| postfix_expression INC_OP				{$$ = mknode("postfix_expression",$2,$1,(node*)NULL);
+	| postfix_expression PTR_OP IDENTIFIER	{Node* n = new Node("postfix_expression");
+											Node* tmp = new Node($3);
+											tmp->mkleaf();
+											n->mknode($2,$1,tmp);
+											$$ = n;}
+	| postfix_expression INC_OP				{
+											Node* n = new Node("postfix_expression");
+											
+											n->mknode($2,$1,(Node*)NULL);
+											$$ = n;
 											if($1->is_init) $$->is_init = 1;
 	  										char* a = postfixExpr($1->node_type, 6);
 											if(a){
@@ -266,7 +283,10 @@ postfix_expression
 												yyerror("Error: Increment not defined for this type");
 											}
 	  										}
-	| postfix_expression DEC_OP				{$$ = mknode("postfix_expression",$2,$1,(node*)NULL);
+	| postfix_expression DEC_OP				{Node* n = new Node("postfix_expression");
+											
+											n->mknode($2,$1,(Node*)NULL);
+											$$ = n;
 											if($1->is_init==1) $$->is_init =1;
 											char *a = postfixExpr($1->node_type, 7);
 											if(a){
@@ -296,7 +316,9 @@ argument_expression_list
 								$$->nextlist={};
                 				//---------------3AC------------//
 								}
-	| argument_expression_list ',' assignment_expression		{$$ = mknode("assignment_expression_list",$2,$1,$3);
+	| argument_expression_list ',' assignment_expression		{Node* n = new Node("assignment_expression_list");
+																n->mknode($2,$1,$3);
+																$$ = n;
 																char* a = argumentExpr($1->node_type, $3->node_type);
 																string s = a;
 																$$->node_type = s;	
@@ -314,7 +336,9 @@ argument_expression_list
 
 unary_expression
 	: postfix_expression		{$$ = $1;} 
-	| INC_OP unary_expression	{$$=  mknode($1,(char*) NULL, (node*)NULL, $2);
+	| INC_OP unary_expression	{Node* n = new Node($1);
+								n->mknode((char*) NULL, (Node*)NULL, $2);
+								$$ = n;
 								if($2->is_init) $$->is_init = 1;
 								char* a = postfixExpr($2->node_type, 6);
 								string s = a;
@@ -330,7 +354,9 @@ unary_expression
                   					//====================================//
 								}else{yyerror("Error: Increment not defined for this type");}
 								}
-	| DEC_OP unary_expression	{$$=  mknode($1,(char*) NULL, (node*)NULL, $2); 
+	| DEC_OP unary_expression	{Node* n = new Node($1);
+								n->mknode((char*) NULL, (Node*)NULL, $2);
+								$$ = n;
 								if($2->is_init) $$->is_init = 1;
 								char* a = postfixExpr($2->node_type, 6);
 								string s = a;
@@ -344,7 +370,9 @@ unary_expression
                   					//====================================//
 								}else{yyerror("Error: Increment not defined for this type");}
 								}
-	| unary_operator cast_expression	{$$ = mknode("unary_expression", (char*)NULL, $1, $2);
+	| unary_operator cast_expression	{Node* n = new Node("unary_expression");
+										n->mknode((char*)NULL, $1, $2);
+										$$ = n;
 										if($2->is_init) $$->is_init = 1;
 										char* a = unaryExpr($1->node_name, $2->node_type);
 										string s = a;
@@ -360,7 +388,11 @@ unary_expression
 										}
 										else  yyerror("Error: Type inconsistent with operator %s", $1->node_name.c_str());
 										}
-	| SIZEOF unary_expression		{$$=  mknode($1, (char*)NULL, (node*)NULL, $2); 
+	| SIZEOF unary_expression		{
+			
+									Node* n = new Node("unary_expression");
+									n->mknode((char*)NULL, (Node*)NULL, $2);
+									$$ = n; 
 									$$->node_type = "int";
 									$$->is_init = 1;
 									//===========3AC======================//
@@ -370,7 +402,10 @@ unary_expression
 									$$->nextlist={};
                 					//====================================//
 									}
-	| SIZEOF '(' type_name ')'		{$$ = mknode($1, (char*)NULL, (node*)NULL, $3);
+	| SIZEOF '(' type_name ')'		{
+									Node* n = new Node($1);
+									n->mknode((char*)NULL, (Node*)NULL, $3);
+									$$ = n;
 									$$->node_type = "int";
 									$$->is_init = 1;
 									//===========3AC======================//
@@ -383,17 +418,20 @@ unary_expression
 	;
 
 unary_operator
-	: '&'		{$$ = mkleaf($1);}
-	| '*'		{$$ = mkleaf($1);}
-	| '+'		{$$ = mkleaf($1);}
-	| '-'		{$$ = mkleaf($1);}
-	| '~'		{$$ = mkleaf($1);}
-	| '!'		{$$ = mkleaf($1);}
+	: '&'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| '*'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| '+'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| '-'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| '~'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| '!'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
 	;
 
 cast_expression
 	: unary_expression		{$$ = $1;}
-	| '(' type_name ')' cast_expression		{$$ = mknode("cast_expression", (char*)NULL, $2, $4);
+	| '(' type_name ')' cast_expression		{
+											Node* n = new Node("cast_expression");
+											n->mknode((char*)NULL, $2, $4);
+											$$ = n;
 											$$->node_type = $2->node_type;
 											if($4->is_init) $$->is_init = 1;
 											//=============3AC====================//
@@ -413,7 +451,10 @@ multiplicative_expression
 														if(a){
 																int k;
 																if(!strcmp(a,"int")){
-																	$$ = mknode("*int",(char*)NULL,$1,$3); $$->node_type = "long long";
+																	Node* n = new Node("*int");
+																	n->mknode((char*)NULL,$1,$3);
+																	$$ = n;
+																	$$->node_type = "long long";
 																	//---------------3AC----------------//
 																	qid t1 = getTmpSym($$->node_type);
 																	k=emit(pair<string, sEntry*>("*int", lookup("*")), $1->place, $3->place, t1, -1);
@@ -422,7 +463,10 @@ multiplicative_expression
                 												//--------------3AC--------------------//
 																}
 																else if(!strcmp(a,"float")){
-																	$$ = mknode("*float",(char*)NULL,$1,$3); $$->node_type = "long double";
+																	Node* n = new Node("*float");
+																	n->mknode((char*)NULL,$1,$3);
+																	$$ = n;
+																	$$->node_type = "long double";
 																	//-------------3AC---------------------//
 																	qid t1 = getTmpSym($$->node_type);
 
@@ -447,7 +491,10 @@ multiplicative_expression
 																
 															}
 														else{
-															$$ = mknode($2,(char*)NULL,$1,$3);
+															
+															Node* n = new Node($2);
+															n->mknode((char*)NULL,$1,$3);
+															$$ = n;
 															yyerror("Error: Incompatible type of * operator");
 														}
 														if($1->is_init && $3->is_init) $$->is_init = 1;
@@ -457,7 +504,11 @@ multiplicative_expression
 														if(a){
 																int k;
 																if(!strcmp(a,"int")){
-																	$$ = mknode("*int",(char*)NULL,$1,$3); $$->node_type = "long long";
+																	
+																	Node* n = new Node("*int");
+																	n->mknode((char*)NULL,$1,$3);
+																	$$ = n;
+																	$$->node_type = "long long";
 																	//---------------3AC----------------------//
 																	qid t1 = getTmpSym($$->node_type);
 																	k = emit(pair<string, sEntry*>("/int", lookup("/")), $1->place, $3->place, t1, -1);
@@ -466,7 +517,10 @@ multiplicative_expression
                  													//--------------3AC------------------------//
 																}
 																else if(!strcmp(a,"float")){
-																	$$ = mknode("*float",(char*)NULL,$1,$3); $$->node_type = "long double";
+																	Node* n = new Node("*float");
+																	n->mknode((char*)NULL,$1,$3);
+																	$$ = n;
+																	$$->node_type = "long double";
 																	//-------------3AC---------------------//
 																	qid t1 = getTmpSym($$->node_type);
 
@@ -489,13 +543,17 @@ multiplicative_expression
 																}
 															}
 														else{
-															$$ = mknode($2,(char*)NULL,$1,$3);
+															Node* n = new Node($2);
+															n->mknode((char*)NULL,$1,$3);
+															$$ = n;
 															yyerror("Error: Incompatible type of * operator");
 														}
 														if($1->is_init && $3->is_init) $$->is_init = 1;
 														}
 	| multiplicative_expression '%' cast_expression		{
-														$$ = mknode($2,(char*)NULL,$1,$3);
+														Node* n = new Node($2);
+														n->mknode((char*)NULL,$1,$3);
+														$$ = n;
 														if($1->is_init && $3->is_init) $$->is_init = 1;
 														char* a = multiplicativeExpr($1->node_type, $3->node_type, '%');
 														if(a){
@@ -525,7 +583,10 @@ additive_expression
 																 p = string("+ ") + s;
 																strcpy(q,p.c_str());
 															}else{ q = "+";}
-															$$ = mknode(q,(char*)NULL,$1,$3);
+												
+															Node* n = new Node(q);
+															n->mknode((char*)NULL,$1,$3);
+															$$ = n;
 															if(a){ 
 																string  s = a;
 																if(!strcmp(a,"int")) {$$->node_type=string("long long");}
@@ -562,7 +623,9 @@ additive_expression
 															p = string("- ") + s;
 															strcpy(q,p.c_str());
 															}else{ q = "-";}
-															$$ = mknode(q,(char*)NULL,$1,$3);
+															Node* n = new Node(q);
+															n->mknode((char*)NULL,$1,$3);
+															$$ = n;
 															if(a){ 
 																string s = a;
 																if(!strcmp(a,"int")) {$$->node_type=string("long long");}
@@ -595,7 +658,10 @@ additive_expression
 
 shift_expression
 	: additive_expression		{$$ = $1;}
-	| shift_expression LEFT_OP additive_expression		{$$ = mknode($2,(char*)NULL,$1,$3);
+	| shift_expression LEFT_OP additive_expression		{
+														Node* n = new Node($2);
+														n->mknode((char*)NULL,$1,$3);
+														$$ = n;
                           								char* a = shiftExpr($1->node_type,$3->node_type);                        
 														if(a){
 															$$->node_type = $1->node_type;
@@ -608,7 +674,9 @@ shift_expression
 														}
 														else{yyerror("Error: Invalid operands to binary <<");}
                            								}
-	| shift_expression RIGHT_OP additive_expression		{$$ = mknode($2,(char*)NULL,$1,$3);
+	| shift_expression RIGHT_OP additive_expression		{Node* n = new Node($2);
+														n->mknode((char*)NULL,$1,$3);
+														$$ = n;
 														char* a = shiftExpr($1->node_type,$3->node_type);                        
 														if(a){
 															$$->node_type = $1->node_type;
@@ -625,7 +693,9 @@ shift_expression
 relational_expression
 	: shift_expression			{$$ = $1;}
 	| relational_expression '<' shift_expression		{ 
-														$$ = mknode($2,(char*)NULL,$1,$3);
+														Node* n = new Node($2);
+														n->mknode((char*)NULL,$1,$3);
+														$$ = n;
 														
 														char* a = relationalExpr($1->node_type,$3->node_type,"<");
                 										if(a){
@@ -647,7 +717,9 @@ relational_expression
                   										}
 	| relational_expression '>' shift_expression		
 	{                
-			$$ = mknode($2,(char*)NULL,$1,$3);
+			Node* n = new Node($2);
+			n->mknode((char*)NULL,$1,$3);
+			$$ = n;
 			char* a=relationalExpr($1->node_type,$3->node_type,">");                 
 			if(a){ 
 				if(!strcmp(a,"bool")) $$->node_type = string("bool");
@@ -669,7 +741,9 @@ relational_expression
   	}
 	| relational_expression LE_OP shift_expression		
 	{
-            $$ = mknode($2,(char*)NULL,$1,$3);
+            Node* n = new Node($2);
+			n->mknode((char*)NULL,$1,$3);
+			$$ = n;
             char* a = relationalExpr($1->node_type,$3->node_type,"<=");               
 			if(a){
 				if(!strcmp(a,"bool")) $$->node_type = string("bool");
@@ -689,7 +763,9 @@ relational_expression
       }
 	| relational_expression GE_OP shift_expression		
 	{
-			$$ = mknode($2,(char*)NULL,$1,$3);
+			Node* n = new Node($2);
+			n->mknode((char*)NULL,$1,$3);
+			$$ = n;
 			char* a = relationalExpr($1->node_type,$3->node_type,">=");            
 			if(a){  
 				if(!strcmp(a,"bool")) $$->node_type = string("bool");
@@ -715,7 +791,9 @@ equality_expression
 	| equality_expression EQ_OP relational_expression		
 	{
 		
-			$$ = mknode($2,(char*)NULL,$1,$3);
+			Node* n = new Node($2);
+			n->mknode((char*)NULL,$1,$3);
+			$$ = n;
             char* a = equalityExpr($1->node_type,$3->node_type);
             if(a){ 
 				if(!strcmp(a,"true")){
@@ -734,7 +812,9 @@ equality_expression
     }
 	| equality_expression NE_OP relational_expression	
 	{
-			$$ = mknode($2,(char*)NULL,$1,$3);
+			Node* n = new Node($2);
+			n->mknode((char*)NULL,$1,$3);
+			$$ = n;
 			char* a = equalityExpr($1->node_type,$3->node_type);
 			if(a){   
 				if(!strcmp(a,"true")){
@@ -757,7 +837,9 @@ and_expression
 	: equality_expression		{$$ = $1;}
 	| and_expression '&' equality_expression		
 	{
-        $$ = mknode($2,(char*)NULL,$1,$3);
+        Node* n = new Node($2);
+		n->mknode((char*)NULL,$1,$3);
+		$$ = n;
         char* a = bitwiseExpr($1->node_type,$3->node_type);
         if(a){
             if(!strcmp(a,"true")) { $$->node_type = string("bool"); }
@@ -780,7 +862,9 @@ exclusive_or_expression
 	: and_expression			{$$ = $1;}
 	| exclusive_or_expression '^' and_expression		
 	{
-        $$ = mknode($2,(char*)NULL,$1,$3);
+        Node* n = new Node($2);
+		n->mknode((char*)NULL,$1,$3);
+		$$ = n;
         char* a = bitwiseExpr($1->node_type,$3->node_type);
         if(a){
             if(!strcmp(a,"true")) { $$->node_type = string("bool"); }
@@ -803,7 +887,9 @@ inclusive_or_expression
 	: exclusive_or_expression		{$$ = $1;}
 	| inclusive_or_expression '|' exclusive_or_expression		
 	{
-            $$ = mknode($2,(char*)NULL,$1,$3);
+            Node* n = new Node($2);
+			n->mknode((char*)NULL,$1,$3);
+			$$ = n;
             char* c = bitwiseExpr($1->node_type,$3->node_type);
             if(c){
                 if(!strcmp(c,"true")) { $$->node_type = string("bool"); }
@@ -841,7 +927,9 @@ logical_and_expression
 	: inclusive_or_expression		{$$ = $1;}
 	| M11 M inclusive_or_expression			
 	{
-        $$ = mknode("&&",(char*)NULL,$1,$3);
+		Node* n = new Node("&&");
+		n->mknode((char*)NULL,$1,$3);
+		$$ = n;
 		$$->node_type == string("bool");
 		 //===========3AC======================//
 		if($3->truelist.begin()==$3->truelist.end()){
@@ -876,7 +964,9 @@ logical_or_expression
 	: logical_and_expression		{$$ = $1;}
 	| M21 M logical_and_expression		
 	{
-        $$ = mknode("||",(char*)NULL,$1,$3);                        
+        Node* n = new Node("||");
+		n->mknode((char*)NULL,$1,$3);
+		$$ = n;                        
         if($1->is_init==1 && $3->is_init==3) $$->is_init=1;
         $$->node_type == string("bool");
     }
@@ -906,7 +996,10 @@ conditional_expression
 	| M31 M expression':' N conditional_expression		
 	{
 		//printf("line 526");
-		$$ = mknode("?",(char*)NULL,$3,$6);
+		//$$ = mknode("?",(char*)NULL,$3,$6);
+		Node* n = new Node("?");
+		n->mknode((char*)NULL,$3,$6);
+		$$ = n;
 		char* c = conditionalExpr($3->node_type,$6->node_type);
 		if(c){
 			string str = c;
@@ -924,9 +1017,9 @@ assignment_expression
 	| unary_expression assignment_operator assignment_expression		
 	{ 
 		
-		$$ = mknode($2,(char*)NULL,$1,$3);
-		
-
+		Node* n = new Node($2);
+		n->mknode((char*)NULL,$1,$3);
+		$$ = n;
     	char* c = assignmentExpr($1->node_type,$3->node_type,$2);
 	
         if(c){
@@ -977,7 +1070,10 @@ assignment_operator
 expression
 	: assignment_expression			{$$ = $1;}
 	| expression ',' M assignment_expression		{
-		$$ = mknode("expression",(char*) NULL, $1, $4);
+		
+		Node* n = new Node("expression");
+		n->mknode((char*) NULL, $1, $4); 
+		$$ = n;
 		$$->node_type = string("void");
 		//--------------3AC--------------------//
                  backPatch($1->nextlist,$3);
@@ -999,24 +1095,34 @@ declaration
 	| declaration_specifiers init_declarator_list ';'   {
 				string empty = ""; 
 				type = empty;
-				$$ = mknode("declaration",(char*) NULL, $1, $2);
+				Node* n = new Node("declaration");
+				n->mknode((char*) NULL, $1, $2);
+				$$ = n;
 		}
 	;
 
 declaration_specifiers
 	: storage_class_specifier		{$$ = $1;}
-	| storage_class_specifier declaration_specifiers		{$$ = mknode("declaration_specifiers",(char*) NULL, $1, $2);}
+	| storage_class_specifier declaration_specifiers		{	Node* n = new Node("declaration_specifiers");
+																n->mknode((char*) NULL, $1, $2);
+																$$ = n;}
 	| type_specifier				{$$ = $1;}
-	| type_specifier declaration_specifiers					{$$ = mknode("declaration_specifiers", (char*)NULL, $1, $2);}
+	| type_specifier declaration_specifiers					{	Node* n = new Node("declaration_specifiers");
+																n->mknode((char*) NULL, $1, $2);
+																$$ = n;}
 	| type_qualifier				{$$ = $1;}
-	| type_qualifier declaration_specifiers					{$$ = mknode("declaration_specifiers", (char*)NULL, $1, $2);}
+	| type_qualifier declaration_specifiers					{	Node* n = new Node("declaration_specifiers");
+																n->mknode((char*) NULL, $1, $2);
+																$$ = n;}
 	;
 
 init_declarator_list
 
 	: init_declarator		{$$ = $1;}
 	| init_declarator_list ',' M init_declarator	{
-													$$ = mknode("init_declarator_list",(char*) NULL, $1, $4);
+													Node* n = new Node("init_declarator_list");
+													n->mknode((char*) NULL, $1, $4);
+													$$ = n;
 													//-----------3AC------------------//
 													backPatch($1->nextlist, $3);
 													$$->nextlist = $4->nextlist;
@@ -1042,9 +1148,9 @@ init_declarator
 		} 
     }
 	| declarator '=' M initializer		{
-		char * k = NULL;
-		$$ = mknode("=",k, $1, $4);
-		
+		Node* n = new Node("=");
+		n->mknode((char*)NULL,$1,$4);
+		$$ = n;
 		if($1->expr_type==1){ 
 			char *t=new char();
             strcpy(t,($1->node_type).c_str());
@@ -1067,133 +1173,175 @@ init_declarator
 	;
 
 storage_class_specifier
-	: TYPEDEF 	{$$ = mkleaf($1);}
-	| EXTERN	{$$ = mkleaf($1);}
-	| STATIC	{$$ = mkleaf($1);}
-	| AUTO		{$$ = mkleaf($1);}
-	| REGISTER		{$$ = mkleaf($1);}
+	: TYPEDEF 	{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| EXTERN	{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| STATIC	{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| AUTO		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| REGISTER		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
 	;
 
 type_specifier
 	: VOID     {     
 					if(type==string(""))type = "void";
                 	else type = type+string(" ")+"void";
-                	$$=mkleaf($1);
+                	Node* n = new Node($1);n->mkleaf(); $$ = n;
               	}
 				  
   	| CHAR     {    
 		  			if(type==string(""))type = "char";
                    	else type = type+string(" ")+"char";
-                  	$$=mkleaf($1);
-				    
+                  	Node* n = new Node($1);n->mkleaf(); $$ = n;
 					 
               	}
   	| SHORT     {     
 		  			if(type==string(""))type = "short";
                    	else type = type+string(" ")+"short";
-                  	$$=mkleaf($1);
+                  	Node* n = new Node($1);n->mkleaf(); $$ = n;
               	}
   	| INT       {    // printf("ddsd");
 		  			if(type==string(""))type = "int";
                    	else type = type+string(" ")+"int";
-                  	$$=mkleaf($1);
+                    Node* n = new Node($1);n->mkleaf(); $$ = n;
 					  
               	}
   	| LONG      {     
 		  			if(type==string(""))type = "long";
                    	else type = type+string(" ")+"long";
-                  	$$=mkleaf($1);
+                  	Node* n = new Node($1);n->mkleaf(); $$ = n;
               	}
   	| FLOAT     {     
 		  			if(type==string(""))type = "float";
                    	else type = type+string(" ")+"float";
-                  	$$=mkleaf($1);
+                  	Node* n = new Node($1);n->mkleaf(); $$ = n;
               	}
   	| DOUBLE    {     
 		  			if(type==string(""))type = "double";
                    	else type = type+string(" ")+"double";
-                  	$$=mkleaf($1);
+                  	Node* n = new Node($1);n->mkleaf(); $$ = n;
               	}
   	| SIGNED    {     
 		  			if(type==string(""))type = "signed";
                    	else type = type+string(" ")+"signed";
-                  	$$=mkleaf($1);
+                  	Node* n = new Node($1);n->mkleaf(); $$ = n;
               	}
   	| UNSIGNED  {     
 		  			if(type==string(""))type = "unsigned";
                    	else type = type+string(" ")+"unsigned";
-                  	$$=mkleaf($1);
+                  	Node* n = new Node($1);n->mkleaf(); $$ = n;
               	}
 	| struct_or_union_specifier		{$$ = $1;}
 	| enum_specifier		{$$ = $1;}
 	| TYPE_NAME	{     
 		  			if(type==string(""))type = string($1);
                    	else type = type+string(" ")+string($1);
-                  	$$=mkleaf($1);
+                  	Node* n = new Node($1);n->mkleaf(); $$ = n;
               	}
 	;
 
 struct_or_union_specifier
-	: struct_or_union IDENTIFIER '{' struct_block_item_list '}'		{$$ = mknode($2,(char*) NULL, $1, $4);}
-	| struct_or_union '{' struct_block_item_list '}'		{$$ = mknode("struct_or_union_specifier",(char*) NULL, $1, $3);}
-	| struct_or_union IDENTIFIER		{$$ = mknode($2,(char*) NULL,$1, NULL);}
+	: struct_or_union IDENTIFIER '{' struct_block_item_list '}'		{Node* n = new Node($2);n->mknode((char*) NULL, $1, $4);$$ = n;}
+	| struct_or_union '{' struct_block_item_list '}'		{Node* n = new Node("struct_or_union_specifier");n->mknode((char*) NULL, $1, $3);$$ = n;}
+	| struct_or_union IDENTIFIER		{Node* n = new Node($2);n->mknode((char*) NULL, $1, NULL);$$ = n;}
 	;
 	
 struct_or_union
-	: STRUCT 	{$$ = mkleaf($1);}
-	| UNION		{$$ = mkleaf($1);}
+	: STRUCT 	{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| UNION		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
 	;
 
 struct_block_item_list
 	: struct_declaration		{$$ = $1;}
-	| struct_block_item_list struct_declaration		{$$ = mknode("struct_block_item_list",(char*) NULL, $1, $2);}
 	;
+	| struct_block_item_list struct_declaration		{Node* n = new Node("struct_block_item_list");n->mknode((char*) NULL, $1, $2);$$ = n;}
 
 struct_declaration
-	: specifier_qualifier_list struct_declarator_list ';'		{$$ = mknode("struct_declaration",(char*) NULL, $1, $2);}	
+	: specifier_qualifier_list struct_declarator_list ';'		{
+																Node* n = new Node("struct_declaration");
+																n->mknode((char*) NULL, $1, $2);
+																$$ = n;
+																}	
 	;
 
 specifier_qualifier_list
-	: type_specifier specifier_qualifier_list		{$$ = mknode("specifier_qualifier_list",(char*) NULL, $1, $2);}
+	: type_specifier specifier_qualifier_list		{
+													Node* n = new Node("specifier_qualifier_list");
+													n->mknode((char*) NULL, $1, $2);
+													$$ = n;
+													}	
 	| type_specifier		{$$ = $1;}
-	| type_qualifier specifier_qualifier_list		{$$ = mknode("specifier_qualifier_list",(char*) NULL, $1, $2);}
+	| type_qualifier specifier_qualifier_list		{
+													Node* n = new Node("specifier_qualifier_list");
+													n->mknode((char*) NULL, $1, $2);
+													$$ = n;
+													}	
 	| type_qualifier		{$$ = $1;}
 	;
 
 struct_declarator_list
 	: struct_declarator		{$$ = $1;}
-	| struct_declarator_list ',' struct_declarator		{$$ = mknode("struct_declarator_list",(char*)NULL, $1, $3);}
+	| struct_declarator_list ',' struct_declarator		{
+														Node* n = new Node("struct_declarator_list");
+														n->mknode((char*) NULL, $1, $3);
+														$$ = n;
+														}	
 	;
 
 struct_declarator
 	: declarator		{$$ = $1;}
 	| ':' constant_expression		{$$ = $2;}
-	| declarator ':' constant_expression		{$$ = mknode("struct_declarator",(char*) NULL, $1, $3);}
+	| declarator ':' constant_expression		{
+												Node* n = new Node("struct_declarator");
+												n->mknode((char*) NULL, $1, $3);
+												$$ = n;
+												}
 	;
 
 enum_specifier
-	: ENUM '{' enumerator_list '}'		{$$ = mknode( $1, (char*)NULL, NULL, $3);}
-	| ENUM IDENTIFIER '{' enumerator_list '}'	{$$ = mknode($1,(char*) NULL,$2, $4,(char*)NULL);}
-	| ENUM IDENTIFIER		{$$ = mknode($1, (char*)NULL, $2,(node*)NULL, (char*)NULL);}
+	: ENUM '{' enumerator_list '}'		{
+										Node* n = new Node($1);
+										n->mknode((char*)NULL, NULL, $3);
+										$$ = n;
+										}
+	| ENUM IDENTIFIER '{' enumerator_list '}'	{
+												Node* n = new Node($1);
+												n->mknode((char*)NULL,$2, $4,(char*)NULL);
+												$$ = n;
+												}
+	| ENUM IDENTIFIER		{
+							Node* n = new Node($1);
+							n->mknode((char*)NULL,$2, (Node*)NULL,(char*)NULL);
+							$$ = n;
+							}
 	;
 
 enumerator_list
 	: enumerator		{$$ = $1;}
-	| enumerator_list ',' enumerator		{$$ = mknode("enumerator_list",(char*) NULL, $1, $3);}
+	| enumerator_list ',' enumerator		{
+											Node* n = new Node("enumerator_list");
+											n->mknode((char*) NULL, $1, $3);
+											$$ = n;
+											}
 	;
 
 enumerator
-	: IDENTIFIER	{$$ = mkleaf($1);}
-	| IDENTIFIER '=' constant_expression		{$$ = mknode("=",(char*)NULL, mkleaf($1),  $3);}
+	: IDENTIFIER	{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| IDENTIFIER '=' constant_expression		{
+												Node* n = new Node("=");
+												Node* tmp = new Node($1);
+												tmp->mkleaf();
+												n->mknode((char*)NULL, tmp, $3);
+												$$ = n;
+												}
 	;
 
 type_qualifier
-	: CONST		{$$ = mkleaf($1);}
-	| VOLATILE		{$$ = mkleaf($1);}
+	: CONST		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| VOLATILE		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
 	;
 
 declarator
-	: pointer direct_declarator		{$$ = mknode("declarator",(char*) NULL, $1, $2);
+	: pointer direct_declarator		{
+									Node* n = new Node("declarator");n->mknode((char*) NULL, $1, $2); $$ = n;
 									if($2->expr_type==1){$$->node_type=$2->node_type+$1->node_type;
                						$$->node_key = $2->node_key;
                						$$->expr_type=1;}
@@ -1215,7 +1363,7 @@ declarator
 direct_declarator
 	: IDENTIFIER		{
 		
-		$$ = mkleaf($1);
+		Node* n = new Node($1);n->mkleaf(); $$ = n;
 		$$->expr_type=1;
 		string str = $1;
 		$$->node_key = str;
@@ -1239,7 +1387,8 @@ direct_declarator
 		}
 	}
 	| direct_declarator '[' constant_expression ']'			{/////////////////huuuuuuuuuuuuuuuuuu////////////////////
-		$$ = mknode("direct_declarator",(char*) NULL, $1, $3);
+		
+		Node* n = new Node("direct_declarator");n->mknode((char*) NULL, $1, $3); $$ = n;
 		if($1->expr_type==1){ 
 			$$->expr_type=1;
             $$->node_key=$1->node_key;
@@ -1255,7 +1404,8 @@ direct_declarator
 		}
 	}	
 	| direct_declarator '[' ']'		{
-		$$ = mknode("direct_declarator", $1,1);
+		//$$ = mknode("direct_declarator", $1,1);
+		Node* n = new Node("direct_declarator");n->mknode($1, 1); $$ = n;
 		if($1->expr_type==1){ 
 			$$->expr_type=1;
             $$->node_key=$1->node_key;
@@ -1273,7 +1423,8 @@ direct_declarator
     }
 	| direct_declarator '(' M3 parameter_type_list ')' M		
 	{ 
-            $$ = mknode("direct_declarator",(char*) NULL, $1, $4);
+            //$$ = mknode("direct_declarator",(char*) NULL, $1, $4);
+			Node* n = new Node("direct_declarator");n->mknode((char*) NULL, $1, $4); $$ = n;
           	if($1->expr_type==1){ 
 				$$->node_key=$1->node_key;
                 $$->expr_type=2;
@@ -1300,7 +1451,10 @@ direct_declarator
             
     }
 	| direct_declarator '(' M3 identifier_list ')'		{
-		$$ = mknode("direct_declarator",(char*) NULL, $1, $4);
+		Node* n = new Node("direct_declarator");
+		n->mknode((char*) NULL, $1, $4);
+		$$ = n;
+		
 		char* c = new char();
         strcpy(c,($$->node_type).c_str());
         $$->size = getSize(c);
@@ -1312,7 +1466,9 @@ direct_declarator
 	}
 	| direct_declarator '(' M3 ')'		
 	{
-			$$ = mknode("direct_declarator", $1,0);
+			Node* n = new Node("direct_declarator");
+			n->mknode( $1,0);
+			$$ = n;
           	if($1->expr_type==1){ 
                 $$->node_key=$1->node_key;
                 insertFuncArguments($1->node_key,string(""));
@@ -1334,16 +1490,39 @@ direct_declarator
 
 
 pointer
-	: '*'		{$$ = mkleaf($1); $$->node_type="*";}
-	| '*' type_qualifier_list		{$$ = mknode("pointer",(char*) NULL, $2, NULL);$$->node_type="*";}
-	| '*' pointer		{$$ = mknode("pointer",(char*) NULL, $2, NULL); $$->node_type="*"+$2->node_type;}
-	| '*' type_qualifier_list pointer		{$$ = mknode("pointer", (char*)NULL, $2, $3);$$->node_type="*"+$3->node_type;}
+	: '*'		{Node* n = new Node($1);
+				n->mkleaf(); 
+				$$ = n; 
+				$$->node_type="*";
+				}
+	| '*' type_qualifier_list		{
+									Node* n = new Node("pointer");
+									n->mknode((char*) NULL, $2 , NULL);    
+									$$ = n;
+									$$->node_type="*";
+								}
+	| '*' pointer		{
+									Node* n = new Node("pointer");
+									n->mknode((char*) NULL, $2 , NULL);    
+									$$ = n;
+									$$->node_type="*"+$2->node_type;
+									}
+	| '*' type_qualifier_list pointer		{
+									Node* n = new Node("pointer");
+									n->mknode((char*) NULL, $2 , $3);    
+									$$ = n;
+									$$->node_type="*"+$3->node_type;
+									}
 	;
 
 
 type_qualifier_list
 	: type_qualifier 	{$$=$1;}
-	| type_qualifier_list type_qualifier 	{$$=mknode("type_qualifier_list",(char*)NULL,$1,$2);}
+	| type_qualifier_list type_qualifier 	{
+									Node* n = new Node("type_qualifier_list");
+									n->mknode((char*) NULL, $1 , $2);    
+									$$ = n;
+									}
 	;
 
 
@@ -1351,18 +1530,25 @@ parameter_type_list
 	: parameter_list 	{$$=$1;}
 	| parameter_list ',' ELLIPSIS 	{
 		funcArguments = funcArguments+string(",...");
-		$$=mknode("parameter_type_list",(char*)NULL,$1,mkleaf($3));
+		Node* n = new Node("parameter_type_list");
+		Node* l1 = new Node($3);
+		l1->mkleaf();
+		n->mknode((char*)NULL,$1,l1);
+		$$=n;
 	}
 	;
 
 parameter_list
 	: parameter_declaration 	{$$=$1;}
-	| parameter_list ',' M parameter_declaration 	{$$=mknode("parameter_list",(char*)NULL,$1,$4);
+	| parameter_list ',' M parameter_declaration 	{
+									Node* n = new Node("parameter_list");
+									n->mknode((char*) NULL, $1 , $4);    
+									$$ = n;
 													//----------------3AC--------------//
                                                        backPatch($1->nextlist,$3);
                                                        $$->nextlist=$4->nextlist;
                                                       //---------------------------------//
-                                              }
+                                }
 							
 	;
 
@@ -1386,44 +1572,95 @@ parameter_declaration
 					funcArguments=($2->node_type);
                	else funcArguments= funcArguments+string(",")+($2->node_type);
             } 
-            $$=mknode("parameter_declaration",(char*)NULL,$1,$2);
+			Node* n = new Node("parameter_declaration");
+			n->mknode((char*) NULL, $1 , $2);    
+			$$ = n;
     }
-	| declaration_specifiers abstract_declarator 	{$$=mknode("parameter_declaration",(char*)NULL,$1,$2);}
+	| declaration_specifiers abstract_declarator 	{
+									Node* n = new Node("parameter_declaration");
+									n->mknode((char*) NULL, $1 , $2);    
+									$$ = n;
+							}
 	| declaration_specifiers {$$=$1;}
 	;
 
 identifier_list
-	: IDENTIFIER 	{$$=mkleaf($1);}
-	| identifier_list ',' IDENTIFIER 	{$$=mknode("identifier_list",(char*)NULL,$1,mkleaf($3));}
+	: IDENTIFIER 	{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	| identifier_list ',' IDENTIFIER 	{
+									Node* n = new Node("identifier_list");
+									Node* l1 = new Node($3);
+									l1->mkleaf();
+									n->mknode((char*) NULL, $1 , l1);    
+									$$ = n;
+									}
 	;
 
 type_name
 	: specifier_qualifier_list 	{$$=$1;}
-	| specifier_qualifier_list abstract_declarator 	{$$=mknode("type_name",(char*)NULL,$1,$2);}
+	| specifier_qualifier_list abstract_declarator 	{
+								Node* n = new Node("type_name");
+									n->mknode((char*) NULL, $1 , $2);    
+									$$ = n;
+								}
 	;
 
 abstract_declarator 
 	: pointer {$$ = $1;}
 	| direct_abstract_declarator 	{$$ = $1;}
-	| pointer direct_abstract_declarator 	{$$ = mknode("abstract_declarator", (char*)NULL, $1, $2);}
+	| pointer direct_abstract_declarator 	{
+									Node* n = new Node("abstract_declarator");
+									n->mknode((char*) NULL, $1 , $2);    
+									$$ = n;
+								}
 	;
+		
 
 direct_abstract_declarator
 	: '(' abstract_declarator ')'   {$$ = $2;}
-	| '[' ']'  						{$$ = mkleaf("[ ]");}
+	| '[' ']'  						{
+										Node* n = new Node("[ ]");
+										n->mkleaf();
+										$$ = n;
+
+									}
 	| '[' constant_expression ']' 	{$$ = $2;}
-	| direct_abstract_declarator '[' ']'	{$$ = mknode("[ ]",(char*)NULL,$1,NULL);}
-	| direct_abstract_declarator '[' constant_expression ']' 	{$$ = mknode("direct_abstract_declarator",(char*)NULL, $1, $3);}
-	| '(' ')'	{$$ = mkleaf("( )");}		
+	| direct_abstract_declarator '[' ']'	{
+									Node* n = new Node("[ ]");
+									n->mknode((char*) NULL, $1 , NULL);    
+									$$ = n;
+								}
+	| direct_abstract_declarator '[' constant_expression ']' 	{
+									Node* n = new Node("direct_abstract_declarator");
+									n->mknode((char*) NULL, $1 , $3);    
+									$$ = n;
+								}
+	| '(' ')'	{Node* n = new Node("( )");
+		n->mkleaf();
+		$$ = n;
+		}
+
 	| '(' parameter_type_list ')'	{$$ = $2;}
-	| direct_abstract_declarator '(' ')' 	{$$ = mknode("( )",(char*)NULL,$1,NULL);}
-	| direct_abstract_declarator '(' parameter_type_list ')'	 {$$ = mknode("direct_abstract_declarator", (char*)NULL, $1, $3);}
+	| direct_abstract_declarator '(' ')' 	{
+									Node* n = new Node("( )");
+									n->mknode((char*) NULL, $1 , NULL);    
+									$$ = n;
+									}
+	| direct_abstract_declarator '(' parameter_type_list ')'	 {
+									Node* n = new Node("direct_abstract_declarator");
+									n->mknode((char*) NULL, $1 , $3);    
+									$$ = n;			
+								}
 	;
 
 initializer
 	: assignment_expression 		{$$ = $1;}
 	| '{' initializer_list '}' 		{$$ = $2; $$->node_type = $2->node_type+string("*");}
-	| '{' initializer_list ',' '}' 		{ $$ = mknode( $3,(char*)NULL, $2 ,NULL);$$->node_type = $2->node_type+string("*"); $$->expr_type =$2->expr_type;
+	| '{' initializer_list ',' '}' 		{ 
+										Node* n = new Node($3);
+										n->mknode((char*) NULL, $2 , NULL);    
+										$$ = n;  
+										$$->node_type = $2->node_type+string("*");
+										$$->expr_type =$2->expr_type;
 										//--------------3AC--------------------//
 										$$->place = $2->place;
 										$$->nextlist = $2->nextlist;
@@ -1436,7 +1673,9 @@ initializer_list
 	: initializer 	{$$ = $1; $$->expr_type=1;}
 	| initializer_list ',' M initializer 	
 	{
-			$$ = mknode("initializer_list",(char*) NULL, $1 ,$4);          
+			Node* n = new Node("initializer_list");
+			n->mknode((char*) NULL, $1 ,$4);    
+			$$ = n;      
 			$$->node_type = $1->node_type;
            	char* a =validAssign($1->node_type,$4->node_type);
                if(a){
@@ -1466,8 +1705,12 @@ statement
 
 labeled_statement
 	: IDENTIFIER ':' M statement 	{
-			$$ = mknode("labeled_statement",(char*) NULL, mkleaf($1), $4); 
-
+			
+								Node* n = new Node("labeled_statement");
+								Node* l1 = new Node($1);
+								l1->mkleaf();
+								n->mknode((char*) NULL, l1, $4);
+								$$ = n;
 									//===========3AC======================//
 
 									if(!gotoIndexStorage($1, $3)){
@@ -1481,7 +1724,12 @@ labeled_statement
 									//=====================================//
 									
 									}
-	| M5 M statement 	 { $$ = mknode("labeled_statement", mkleaf("case"), $1, $3); 
+	| M5 M statement 	 { 
+							Node* n = new Node("labeled_statement");
+							Node* l1 = new Node("case");
+							l1->mkleaf();
+							n->mknode( l1, $1, $3);
+							$$ = n;
 							//-----------3AC--------------------//
                                   backPatch($1->truelist, $2);
                                   $3->nextlist.merge($1->falselist);
@@ -1491,7 +1739,13 @@ labeled_statement
                                   $$->continuelist=$3->continuelist;
                                //-----------------------------------//
 							} 
-	| DEFAULT ':' statement	 { $$ = mknode("labeled_statement",(char*) NULL, mkleaf($1), $3); 
+	| DEFAULT ':' statement	 { 
+								Node* n = new Node("labeled_statement");
+								Node* l1 = new Node($1);
+								l1->mkleaf();
+								n->mknode((char*) NULL, l1, $3);
+								$$ = n;
+
 								//---------3AC-----------------------//
                                  $$->breaklist= $3->breaklist;
                                  $$->nextlist = $3->nextlist;
@@ -1505,7 +1759,7 @@ labeled_statement
 
 
 compound_statement
-	: '{' '}'   {isFunc=0;$$ = mkleaf("{ }"); $$->rVal = -5;}
+	: '{' '}'   {isFunc=0;Node* n = new Node("{ }");n->mkleaf();$$ = n;$$->rVal = -5;}
 	| M1  block_item_list '}'  {if(blockSym){ string s($1);
                                     s=s+string(".csv");
                                     string u($1);
@@ -1518,7 +1772,10 @@ compound_statement
 
 block_item_list
 	: block_item  {$$ = $1;}
-	| block_item_list M block_item  {$$ = mknode("block_item_list", (char*)NULL, $1, $3);
+	| block_item_list M block_item  {
+									Node* n = new Node("block_item_list");
+									n->mknode((char*)NULL, $1, $3);
+									$$ = n;
 									//---------------3AC--------------------//
 									backPatch($1->nextlist, $2);
 									$$->nextlist = $3->nextlist;
@@ -1539,17 +1796,28 @@ block_item
 
 declaration_list
 	: declaration 	{$$ = $1;}
-	| declaration_list declaration 	{ $$ = mknode("declaration_list", (char*)NULL, $1, $2);}
+	| declaration_list declaration 	{
+									Node* n = new Node("declaration_list");
+									n->mknode((char*)NULL, $1, $2);
+									$$ = n;
+							}
 	;
 
 
 expression_statement
-	: ';' 	{$$ = mkleaf(";");}
+	: ';' 	{
+		Node* n = new Node(";");
+		n->mkleaf();
+		$$ = n;
+		}
 	| expression ';' 	{$$ = $1;}
 	;
 
 selection_statement
-	: M4 M statement 	{$$ = mknode("IF (expr) stmt", (node*)NULL, $1, $3, (node*)NULL,(node*) NULL);
+	: M4 M statement 	{
+						Node* n = new Node("IF (expr) stmt");
+						n->mknode((Node*)NULL, $1, $3, (Node*)NULL,(Node*) NULL);
+						$$ = n;
 						//---------------3AC-------------------//
 							backPatch($1->truelist, $2);
 							$3->nextlist.merge($1->falselist);
@@ -1558,7 +1826,11 @@ selection_statement
 							$$->breaklist = $3->breaklist;
 						//------------------------------------//
 						}
-	| M4 M statement GOTO_emit ELSE M statement 	{$$ = mknode("IF (expr) stmt ELSE stmt",(node*) NULL, $1, $3, (node*)NULL, $7); 
+	| M4 M statement GOTO_emit ELSE M statement 	{
+													Node* n = new Node("IF (expr) stmt ELSE stmt");
+													n->mknode((Node*) NULL, $1, $3, (Node*)NULL, $7); 
+													$$ = n;
+					
 													//----------3AC---------------------//
 													backPatch($1->truelist, $2);
 													backPatch($1->falselist, $6);
@@ -1571,7 +1843,10 @@ selection_statement
 													$$->continuelist = $3->continuelist;
 													//-----------------------------------//
 													}
-	| SWITCH '(' expression ')' statement 	{$$ = mknode("SWITCH (expr) stmt",(node*) NULL, $3, $5,(node*) NULL,(node*) NULL);
+	| SWITCH '(' expression ')' statement 	{
+											Node* n = new Node("SWITCH (expr) stmt");
+											n->mknode((Node*) NULL, $3, $5,(Node*) NULL,(Node*) NULL);
+											$$ = n;
 											//--------------3AC---------------------------//
                                               setListId1($5->caselist, $3->place);
                                               $5->nextlist.merge($5->breaklist);
@@ -1582,7 +1857,10 @@ selection_statement
 	;
 
 iteration_statement
-	: WHILE '(' M M6 ')' M statement GOTO_emit	{$$ = mknode("WHILE (expr) stmt", (node*)NULL, $4, $7, (node*)NULL, (node*)NULL);
+	: WHILE '(' M M6 ')' M statement GOTO_emit	{
+												Node* n = new Node("WHILE (expr) stmt");
+												n->mknode((Node*)NULL, $4, $7, (Node*)NULL, (Node*)NULL);
+												$$ = n;
 												//-----------3AC------------------//
 												backPatch($4->truelist, $6);
 												$7->continuelist.push_back($8);
@@ -1592,7 +1870,10 @@ iteration_statement
 												$$->nextlist.merge($7->breaklist);
 												//--------------------------------//
 												}
-	| DO M statement WHILE '(' M M6 ')' ';' 	{$$ = mknode("DO stmt WHILE (expr)", (node*)NULL, $3, (node*)NULL, $7, (node*)NULL);
+	| DO M statement WHILE '(' M M6 ')' ';' 	{
+												Node* n = new Node("DO stmt WHILE (expr)");
+												n->mknode((Node*)NULL, $3, (Node*)NULL, $7, (Node*)NULL);
+												$$ = n;
 												//--------3AC-------------------------//
 												backPatch($7->truelist, $2);
 												backPatch($3->continuelist, $6);
@@ -1601,7 +1882,10 @@ iteration_statement
 												$$->nextlist = $7->falselist;
 												//-----------------------------------//
 												}
-	| FOR '(' expression_statement M M7 ')' M statement GOTO_emit	{$$ = mknode("FOR (expr_stmt expr_stmt) stmt",(node*) NULL, $3, $5, $8, (node*)NULL);
+	| FOR '(' expression_statement M M7 ')' M statement GOTO_emit	{
+												Node* n = new Node("FOR (expr_stmt expr_stmt) stmt");
+												n->mknode((Node*) NULL, $3, $5, $8, (Node*)NULL);
+												$$ = n;
 												//-------------3AC-------------------//
 												backPatch($3->nextlist, $4);
 												backPatch($5->truelist, $7);
@@ -1612,7 +1896,10 @@ iteration_statement
 												backPatch($8->nextlist, $4 );
 												//------------------------------------//
 											}
-	| FOR '(' expression_statement M M7 M expression GOTO_emit')' M statement GOTO_emit	{$$ = mknode("FOR (expr_stmt expr_stmt expr) stmt",(node*) NULL, $3, $5, $7, $11);
+	| FOR '(' expression_statement M M7 M expression GOTO_emit')' M statement GOTO_emit	{
+												Node* n = new Node("FOR (expr_stmt expr_stmt expr) stmt");
+												n->mknode((Node*) NULL, $3, $5, $7, $11);
+												$$ = n ;
 												//-------------3AC-------------------//
 												backPatch($3->nextlist, $4);
 												backPatch($5->truelist, $10);
@@ -1630,30 +1917,47 @@ iteration_statement
 jump_statement
 	: GOTO IDENTIFIER ';' 	
 	{ 	
-		$$ = mknode("jump_statement",(char*) NULL, mkleaf($1),mkleaf($2)); 
+		Node* n = new Node("jump_statement");
+		Node* l1 = new Node($1);
+		l1->mkleaf();
+		Node* l2 = new Node($2);
+		l2->mkleaf();
+		n->mknode((char*) NULL, l1, l2);
+		$$ = n;
 								//-----------3AC---------------------//
                                  int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
                                  gotoIndexPatchListStorage($2, k);
                                 //-----------------------------------//
 	}
-	| CONTINUE ';' 	{ $$ = mkleaf("continue");
+	| CONTINUE ';' 	{ 	Node* n = new Node("continue");
+						n->mkleaf();
+						$$ = n;
 							//-----------3AC---------------------//
                                  int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
                                  $$->continuelist.push_back(k);
                                //-----------------------------------//
 					}
-	| BREAK ';' 	{ $$ = mkleaf("break");
+	| BREAK ';' 	{ Node* n = new Node("break");
+						n->mkleaf();
+						$$ = n;
 					//-----------3AC---------------------//
 					int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
 					$$->breaklist.push_back(k);
 					//-----------------------------------//
 					}
-	| RETURN ';' 	{ $$ = mkleaf("return");
+	| RETURN ';' 	{ 
+						Node* n = new Node("return");
+						n->mkleaf();
+						$$ = n;
 					//------------3AC----------------//
 					emit(pair<string, sEntry*>("RETURN", lookup("return")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),-1);
 					//------------------------------//
 					}
-	| RETURN expression ';' 	{$$ = mknode("jump_statement",(char*) NULL, mkleaf("return"),$2);
+	| RETURN expression ';' 	{Node* n = new Node("jump_statement");
+								Node* l1 = new Node("return");
+								l1->mkleaf();
+								n->mknode((char*) NULL, l1, $2);
+								$$ = n;
 								//------------3AC----------------//
 								emit(pair<string, sEntry*>("RETURN", lookup("return")), $2->place, pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),-1);
 								//------------------------------//
@@ -1662,7 +1966,9 @@ jump_statement
 
 translation_unit
 	: external_declaration 	{$$ = $1;}
-	| translation_unit M external_declaration 	{$$ = mknode("translation_unit", (char*)NULL, $1, $3);
+	| translation_unit M external_declaration 	{Node * n = new Node("translation_unit");
+												n->mknode((char*)NULL, $1, $3);
+												$$ = n;
 												//----------3Ac----------------//
 													backPatch($1->nextlist, $2);
 													$$->nextlist = $3->nextlist;
@@ -1695,7 +2001,9 @@ function_definition
             printSymTables(curr,str2); 
             symNumber=0;
             updateSymTable(str1);
-			$$ = mknode("function_definition", $1, $2, $4, $5,(char*) NULL);
+			Node* n = new Node("function_definition");
+			n->mknode( $1, $2, $4, $5,(char*) NULL);
+			$$ = n;
 			//--------------------3AC--------------------------------//
 				if($5->rVal != -5){ string em =  "func end";
 				emit(pair<string , sTableEntry*>(em, NULL), pair<string , sTableEntry*>("", NULL),pair<string , sTableEntry*>("", NULL),pair<string , sTableEntry*>("", NULL),-3);}
@@ -1710,7 +2018,9 @@ function_definition
             printSymTables(curr,str2); 
             symNumber=0;
             updateSymTable(str1);
-			$$ = mknode("function_definition", $1, $2, $4);
+			Node* n = new Node("function_definition");			
+			n->mknode($1, $2, $4);
+			$$ = n;
 			//--------------------3AC--------------------------------//
                 if($4->rVal != -5){string em =  "func end";
                 emit(pair<string , sEntry*>(em, NULL), pair<string , sEntry*>("", NULL),pair<string , sEntry*>("", NULL),pair<string , sEntry*>("", NULL),-3); }
@@ -1725,7 +2035,9 @@ function_definition
             printSymTables(curr,str2); 
             symNumber=0;
             updateSymTable(str1);
-			$$ = mknode("function_definition", (node*)NULL, $1, $3, $4,(char*) NULL);
+			Node* n = new Node("function_definition");
+			n->mknode((Node*)NULL, $1, $3, $4,(char*) NULL);
+			$$ = n;	
 	}
 	| declarator M2 compound_statement			
 	{
@@ -1736,7 +2048,9 @@ function_definition
             printSymTables(curr,str2); 
             symNumber=0;
             updateSymTable(str1);
-			$$ = mknode("function_definition",(node*)NULL, $1, $3);
+			Node* n = new Node("function_definition");
+			n->mknode((Node*)NULL, $1, $3);
+			$$ = n;
 	}
 	;
 
@@ -1926,4 +2240,8 @@ void yyerror(char *s,...){
   }
   
 }
+
+
+
+
 
