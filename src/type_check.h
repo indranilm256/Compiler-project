@@ -7,23 +7,27 @@ using namespace std;
 
 typedef long long ll;
 typedef unsigned long long ull;
-
-char* primaryExpr(char* identifier);
-char* constant(int nType);
-char* postfixExpr(string type, int prodNum);
-char* argumentExpr(string type1, string type2);
-char* unaryExpr(string op, string type);
 bool isInt (string type);
 bool isSignedInt (string type);
 bool isFloat (string type);
 bool isSignedFloat (string type);
-char* multiplicativeExpr(string type1, string type2, char op);
-char* additiveExpr(string type1, string type2, char op);
-char* shiftExpr(string type1,string type2);
-char* relationalExpr(string type1,string type2,char * op);
-char * equalityExpr(string type1,string type2);
-char * bitwiseExpr(string type1,string type2);
-char* conditionalExpr(string type1,string type2);
-char* validAssign(string type1,string type2);
-char* assignmentExpr(string type1,string type2,char* op);
-int typedecide(string type1, string type2);
+class type_check
+{
+    public:
+    static char* primaryExpr(char* identifier);
+    static char* constant(int nType);
+    static char* postfixExpr(string type, int prodNum);
+    static char* argumentExpr(string type1, string type2);
+    static char* unaryExpr(string op, string type);
+    static char* multiplicativeExpr(string type1, string type2, char op);
+    static char* additiveExpr(string type1, string type2, char op);
+    static char* shiftExpr(string type1,string type2);
+    static char* relationalExpr(string type1,string type2,char * op);
+    static char * equalityExpr(string type1,string type2);
+    static char * bitwiseExpr(string type1,string type2);
+    static char* conditionalExpr(string type1,string type2);
+    static char* validAssign(string type1,string type2);
+    static char* assignmentExpr(string type1,string type2,char* op);
+    static int typedecide(string type1, string type2);
+        
+};
