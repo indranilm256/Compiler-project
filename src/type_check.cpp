@@ -94,7 +94,7 @@ char* type_check::argumentExpr(string type1, string type2)
     }
 }
 
-bool type_check:: isInt(string type)
+bool isInt(string type)
 {
     if (type == string("int") || type == string("long") || type == string("long long") || type == string("long int") || type == string("long long int") ||
         type == string("unsigned int") || type == string("unsigned long") || type == string("unsigned long long") || type == string("unsigned long int") ||
@@ -105,7 +105,7 @@ bool type_check:: isInt(string type)
     return false;
 }
 
-bool type_check:: isSignedInt(string type)
+bool isSignedInt(string type)
 {
     if ((type == string("int")) || (type == string("long")) || (type == string("long long")) || (type == string("long int")) || (type == string("long long int")) || (type == string("signed int")) || (type == string("signed long")) || (type == string("signed long long")) || (type == string("signed long int")) || (type == string("signed long long int")) ||
         (type == string("short")) || (type == string("short int")) || (type == string("signed short")) || (type == string("signed short int")))
@@ -116,7 +116,7 @@ bool type_check:: isSignedInt(string type)
     return false;
 }
 
-bool type_check:: isFloat(string type)
+bool isFloat(string type)
 {
     if (type == string("float") || type == string("double") || type == string("long double") || type == string("unsigned float") || type == string("unsigned double") || type == string("unsigned long double") ||
         type == string("signed float") || type == string("signed double") || type == string("signed long double"))
@@ -127,7 +127,7 @@ bool type_check:: isFloat(string type)
     return false;
 }
 
-bool type_check:: isSignedFloat(string type)
+bool isSignedFloat(string type)
 {
     if (type == string("float") || type == string("signed double") || type == string("double") || type == string("long double") || type == string("signed float") ||
         type == string("signed long double"))

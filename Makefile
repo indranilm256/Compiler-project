@@ -26,4 +26,4 @@ $(OBJ)/%.o: $(SRC)/%.cpp
 
 clean:
 	$(RM) -rf $(OBJ) $(BIN)
-	$(RM) output.txt  parser.output graph.gv myAST.dot *.csv
+	$(RM) output.txt  parser.output graph.gv myAST.dot *.csv *.txt

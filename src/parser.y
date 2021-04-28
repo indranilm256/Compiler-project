@@ -80,16 +80,16 @@ primary_expression
 	: IDENTIFIER			{Node* n = new Node($1);
 							n->mkleaf();
 							$$ = n;
-							char* a = primaryExpr($1);
+							char* a = type_check::primaryExpr($1);
 				    		if(a){
 									string s = a;
-                                    $$->is_init = lookup($1)->is_init;
+                                    $$->is_init = symbol_table::lookup($1)->is_init;
                                     $$->node_type = s;
                                     string key($1);
                                     $$->node_key = key;
                                     $$->expr_type = 3; 
 									//-----------3AC----------------------//
-                                         $$->place = pair<string,sEntry*>(key,lookup(key));
+                                         $$->place = pair<string,sEntry*>(key,symbol_table::lookup(key));
                                          $$->nextlist= {};
                                     //----------------3AC--------------------//
 								}
@@ -105,7 +105,7 @@ primary_expression
 							Node* n = new Node($1->str);
 							n->mkleaf();
 							$$ = n;
-							char *a = constant($1->nType);
+							char *a = type_check::constant($1->nType);
 							
 							string s = a;							
 							$$->node_type = s;
@@ -139,7 +139,7 @@ postfix_expression
 												n->mknode((char*) NULL, $1, $3);
 												$$ = n;
 												if($1->is_init && $3->is_init){$$->is_init = 1;}
-												char* a = postfixExpr($1->node_type, 1);
+												char* a = type_check::postfixExpr($1->node_type, 1);
 												if(!isInt($3->node_type)){yyerror("Error: Array Index should be of type 'int' not '%s' ",$3->node_type.c_str());}
 												if(a){
 													string s = a;
@@ -162,12 +162,12 @@ postfix_expression
 																								}
 	| postfix_expression '(' ')'		{	$$ = $1;
 											$$->is_init = 1;
-											char* a = postfixExpr($1->node_type,2);
+											char* a = type_check::postfixExpr($1->node_type,2);
 										 	if(a){
 												string s = a;
 												$$->node_type = s;
 												if($1->expr_type == 3){
-													string funcArgs = funcArgList($1->node_key);
+													string funcArgs = symbol_table::funcArgList($1->node_key);
 													  //----------------------------3AC-------------------------------------------------//
 													qid t = getTmpSym($$->node_type);
 													int k=emit(pair<string, sEntry*>("refParam", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), t, -1);
@@ -190,12 +190,12 @@ postfix_expression
 																n->mknode((char*) NULL, $1, $3);
 																$$ = n;
 																if($3->is_init) $$->is_init = 1;
-																char* a = postfixExpr($1->node_type, 3);
+																char* a = type_check::postfixExpr($1->node_type, 3);
 																if(a){
 																	string s = a;
 																	$$->node_type = s;
 																	if($1->expr_type==3){
-																		string funcArgs = funcArgList($1->node_key);
+																		string funcArgs = symbol_table::funcArgList($1->node_key);
 																		int f=1;
 																		if($1->node_key == "printf"){f = 0;}
 																		char* b = new char();
@@ -215,7 +215,7 @@ postfix_expression
 																			if(f2 != -1) tmp2 = tmp2.substr(f2+1);
 																			if(B == "...") break;
 	
-																			b = validAssign(A,B);
+																			b = type_check::validAssign(A,B);
 																			if(b){
 																				if(!strcmp(b,"warning")){
 																					yyerror("Warning: Passing argument %d of \'%s\' from incompatible pointer type.\n Note : expected \'%s\' but argument is of type \'%s\'\n     \'%s %s %s \'",argnum,($1->node_key).c_str(),B.c_str(),A.c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());
@@ -268,13 +268,13 @@ postfix_expression
 											n->mknode($2,$1,(Node*)NULL);
 											$$ = n;
 											if($1->is_init) $$->is_init = 1;
-	  										char* a = postfixExpr($1->node_type, 6);
+	  										char* a = type_check::postfixExpr($1->node_type, 6);
 											if(a){
 												string s = a; 
 												$$->node_type = s;
 												 //------------------3AC------------//
 												qid t1 = getTmpSym($$->node_type);
-												int k=  emit(pair<string, sEntry*>("++S", lookup("++")), $1->place, pair<string, sEntry*>("", NULL), t1, -1);
+												int k=  emit(pair<string, sEntry*>("++S", symbol_table::lookup("++")), $1->place, pair<string, sEntry*>("", NULL), t1, -1);
 												$$->place = t1;
 												$$->nextlist = {};
 												//-----------------3AC-----------------//
@@ -288,13 +288,13 @@ postfix_expression
 											n->mknode($2,$1,(Node*)NULL);
 											$$ = n;
 											if($1->is_init==1) $$->is_init =1;
-											char *a = postfixExpr($1->node_type, 7);
+											char *a = type_check::postfixExpr($1->node_type, 7);
 											if(a){
 												string s = a;
 												$$->node_type = s;
 												//-----------------3AC-------------//
 												qid t1 = getTmpSym($$->node_type);
-												int k=emit(pair<string, sEntry*>("--S", lookup("--")), $1->place, pair<string, sEntry*>("", NULL), t1, -1);
+												int k=emit(pair<string, sEntry*>("--S", symbol_table::lookup("--")), $1->place, pair<string, sEntry*>("", NULL), t1, -1);
 												$$->place = t1;
 												$$->nextlist={};
                   								//--------------3AC-------------//
@@ -319,7 +319,7 @@ argument_expression_list
 	| argument_expression_list ',' assignment_expression		{Node* n = new Node("assignment_expression_list");
 																n->mknode($2,$1,$3);
 																$$ = n;
-																char* a = argumentExpr($1->node_type, $3->node_type);
+																char* a = type_check::argumentExpr($1->node_type, $3->node_type);
 																string s = a;
 																$$->node_type = s;	
 																
@@ -340,13 +340,13 @@ unary_expression
 								n->mknode((char*) NULL, (Node*)NULL, $2);
 								$$ = n;
 								if($2->is_init) $$->is_init = 1;
-								char* a = postfixExpr($2->node_type, 6);
+								char* a = type_check::postfixExpr($2->node_type, 6);
 								string s = a;
 								if(a){
 									$$->node_type = s;
 									 //===========3AC======================//
 									qid t1 = getTmpSym($$->node_type);
-									int k = emit(pair<string, sEntry*>("++P", lookup("++")), $2->place, pair<string, sEntry*>("", NULL), t1, -1);
+									int k = emit(pair<string, sEntry*>("++P", symbol_table::lookup("++")), $2->place, pair<string, sEntry*>("", NULL), t1, -1);
 									$$->place = t1;
 									$$->nextlist = {};
 								    //$$->code =  $2->code + '\n' +\
@@ -358,13 +358,13 @@ unary_expression
 								n->mknode((char*) NULL, (Node*)NULL, $2);
 								$$ = n;
 								if($2->is_init) $$->is_init = 1;
-								char* a = postfixExpr($2->node_type, 6);
+								char* a = type_check::postfixExpr($2->node_type, 6);
 								string s = a;
 								if(a){
 									$$->node_type = s;
 									 //===========3AC======================//
 									qid t1 = getTmpSym($$->node_type);
-									int k = emit(pair<string, sEntry*>("--P", lookup("--")), $2->place, pair<string, sEntry*>("", NULL), t1, -1);
+									int k = emit(pair<string, sEntry*>("--P", symbol_table::lookup("--")), $2->place, pair<string, sEntry*>("", NULL), t1, -1);
 									$$->place = t1;
 									$$->nextlist={};
                   					//====================================//
@@ -374,7 +374,7 @@ unary_expression
 										n->mknode((char*)NULL, $1, $2);
 										$$ = n;
 										if($2->is_init) $$->is_init = 1;
-										char* a = unaryExpr($1->node_name, $2->node_type);
+										char* a = type_check::unaryExpr($1->node_name, $2->node_type);
 										string s = a;
 										if(a){
 											$$->node_type = s;
@@ -397,7 +397,7 @@ unary_expression
 									$$->is_init = 1;
 									//===========3AC======================//
 									qid t1 = getTmpSym($$->node_type);
-									int k = emit(pair<string, sEntry*>("SIZEOF", lookup("sizeof")), $2->place, pair<string, sEntry*>("", NULL), t1, -1);
+									int k = emit(pair<string, sEntry*>("SIZEOF", symbol_table::lookup("sizeof")), $2->place, pair<string, sEntry*>("", NULL), t1, -1);
 									$$->place = t1;
 									$$->nextlist={};
                 					//====================================//
@@ -410,7 +410,7 @@ unary_expression
 									$$->is_init = 1;
 									//===========3AC======================//
 									qid t1 = getTmpSym($$->node_type);
-									int k = emit(pair<string, sEntry*>("SIZEOF", lookup("sizeof")), $3->place, pair<string, sEntry*>("", NULL), t1, -1);
+									int k = emit(pair<string, sEntry*>("SIZEOF", symbol_table::lookup("sizeof")), $3->place, pair<string, sEntry*>("", NULL), t1, -1);
 									$$->place = t1;
 									$$->nextlist={};
                 					//====================================//
@@ -447,7 +447,7 @@ cast_expression
 multiplicative_expression
 	: cast_expression		{$$ = $1;}
 	| multiplicative_expression '*' cast_expression		{
-														char* a = multiplicativeExpr($1->node_type, $3->node_type, '*');
+														char* a = type_check::multiplicativeExpr($1->node_type, $3->node_type, '*');
 														if(a){
 																int k;
 																if(!strcmp(a,"int")){
@@ -457,7 +457,7 @@ multiplicative_expression
 																	$$->node_type = "long long";
 																	//---------------3AC----------------//
 																	qid t1 = getTmpSym($$->node_type);
-																	k=emit(pair<string, sEntry*>("*int", lookup("*")), $1->place, $3->place, t1, -1);
+																	k=emit(pair<string, sEntry*>("*int", symbol_table::lookup("*")), $1->place, $3->place, t1, -1);
 																	$$->place = t1;
 																	$$->nextlist={};
                 												//--------------3AC--------------------//
@@ -473,16 +473,16 @@ multiplicative_expression
 																	if(isInt($1->node_type)){
 																			qid t2 = getTmpSym($$->node_type);
 																			emit(pair<string, sEntry*>("inttoreal",NULL),$1->place,pair<string, sEntry*>("",NULL),t2,-1);
-																			k=emit(pair<string, sEntry*>("*real", lookup("*")), t2, $3->place, t1, -1);
+																			k=emit(pair<string, sEntry*>("*real", symbol_table::lookup("*")), t2, $3->place, t1, -1);
 																	}
 																	else if(isInt($3->node_type)){
 																			qid t2 = getTmpSym($$->node_type);
 																			emit(pair<string, sEntry*>("inttoreal",NULL),$3->place,pair<string, sEntry*>("",NULL),t2,-1);
-																			k=emit(pair<string, sEntry*>("*real", lookup("*")), $1->place, t2, t1, -1);
+																			k=emit(pair<string, sEntry*>("*real", symbol_table::lookup("*")), $1->place, t2, t1, -1);
 																	}
 																	else {
 
-																			k=emit(pair<string, sEntry*>("*real", lookup("*")), $1->place, $3->place, t1, -1);
+																			k=emit(pair<string, sEntry*>("*real", symbol_table::lookup("*")), $1->place, $3->place, t1, -1);
 																	}
 																	$$->place = t1;
 																	$$->nextlist={};
@@ -500,7 +500,7 @@ multiplicative_expression
 														if($1->is_init && $3->is_init) $$->is_init = 1;
 														}
 	| multiplicative_expression '/' cast_expression		{
-														char* a = multiplicativeExpr($1->node_type, $3->node_type, '/');
+														char* a = type_check::multiplicativeExpr($1->node_type, $3->node_type, '/');
 														if(a){
 																int k;
 																if(!strcmp(a,"int")){
@@ -511,7 +511,7 @@ multiplicative_expression
 																	$$->node_type = "long long";
 																	//---------------3AC----------------------//
 																	qid t1 = getTmpSym($$->node_type);
-																	k = emit(pair<string, sEntry*>("/int", lookup("/")), $1->place, $3->place, t1, -1);
+																	k = emit(pair<string, sEntry*>("/int", symbol_table::lookup("/")), $1->place, $3->place, t1, -1);
 																	$$->place = t1;
 																	$$->nextlist= {};
                  													//--------------3AC------------------------//
@@ -527,15 +527,15 @@ multiplicative_expression
 																	if(isInt($1->node_type)){
 																			qid t2 = getTmpSym($$->node_type);
 																			emit(pair<string, sEntry*>("inttoreal",NULL),$1->place,pair<string, sEntry*>("",NULL),t2,-1);
-																			k=emit(pair<string, sEntry*>("/real", lookup("/")), t2, $3->place, t1, -1);
+																			k=emit(pair<string, sEntry*>("/real", symbol_table::lookup("/")), t2, $3->place, t1, -1);
 																	}
 																	else if(isInt($3->node_type)){
 																			qid t2 = getTmpSym($$->node_type);
 																			emit(pair<string, sEntry*>("inttoreal",NULL),$3->place,pair<string, sEntry*>("",NULL),t2,-1);
-																			k=emit(pair<string, sEntry*>("/real", lookup("/")), $1->place, t2, t1, -1);
+																			k=emit(pair<string, sEntry*>("/real", symbol_table::lookup("/")), $1->place, t2, t1, -1);
 																	}
 																	else {
-																			k=emit(pair<string, sEntry*>("/real", lookup("/")), $1->place, $3->place, t1, -1);
+																			k=emit(pair<string, sEntry*>("/real", symbol_table::lookup("/")), $1->place, $3->place, t1, -1);
 																	}
 																	$$->place =t1;
 																	$$->nextlist={};
@@ -555,12 +555,12 @@ multiplicative_expression
 														n->mknode((char*)NULL,$1,$3);
 														$$ = n;
 														if($1->is_init && $3->is_init) $$->is_init = 1;
-														char* a = multiplicativeExpr($1->node_type, $3->node_type, '%');
+														char* a = type_check::multiplicativeExpr($1->node_type, $3->node_type, '%');
 														if(a){
 															$$->node_type = "long long";
 															//===========3AC======================//
 															qid t1 = getTmpSym($$->node_type);
-															int k =emit(pair<string, sEntry*>("%", lookup("%")), $1->place, $3->place, t1, -1);
+															int k =emit(pair<string, sEntry*>("%", symbol_table::lookup("%")), $1->place, $3->place, t1, -1);
 															$$->nextlist={};
 															$$->place = t1;
 
@@ -575,7 +575,7 @@ multiplicative_expression
 additive_expression
 	: multiplicative_expression		{$$ = $1;}
 	| additive_expression '+' multiplicative_expression		{
-															char* a = additiveExpr($1->node_type,$3->node_type,'+');
+															char* a = type_check::additiveExpr($1->node_type,$3->node_type,'+');
 															char* q = new char();
 															string p;
 															if(a){
@@ -597,15 +597,15 @@ additive_expression
 																if(isInt($1->node_type) && isFloat($3->node_type)){
 																		qid t2 = getTmpSym($$->node_type);
 																		emit(pair<string, sEntry*>("inttoreal",NULL),$1->place,pair<string, sEntry*>("",NULL),t2,-1);
-																		emit(pair<string, sEntry*>(p, lookup("+")), t2, $3->place, t1, -1);
+																		emit(pair<string, sEntry*>(p, symbol_table::lookup("+")), t2, $3->place, t1, -1);
 																}
 																else if(isInt($3->node_type) && isFloat($1->node_type)){
 																		qid t2 = getTmpSym($$->node_type);
 																		emit(pair<string, sEntry*>("inttoreal",NULL),$3->place,pair<string, sEntry*>("",NULL),t2,-1);
-																		emit(pair<string, sEntry*>(p, lookup("+")), $1->place, t2, t1, -1);
+																		emit(pair<string, sEntry*>(p, symbol_table::lookup("+")), $1->place, t2, t1, -1);
 																}
 																else {
-																		emit(pair<string, sEntry*>(p, lookup("+")), $1->place, $3->place, t1, -1);
+																		emit(pair<string, sEntry*>(p, symbol_table::lookup("+")), $1->place, $3->place, t1, -1);
 																}
 																$$->place = t1;
 																$$->nextlist = {};
@@ -616,7 +616,7 @@ additive_expression
 															if($1->is_init && $3->is_init) $$->is_init = 1;
 															}			
 	| additive_expression '-' multiplicative_expression		{
-															char* a = additiveExpr($1->node_type,$3->node_type,'-');
+															char* a = type_check::additiveExpr($1->node_type,$3->node_type,'-');
 															char* q = new char();
 															string p;
 															if(a){string s = a;
@@ -636,15 +636,15 @@ additive_expression
 																if(isInt($1->node_type) && isFloat($3->node_type)){
 																		qid t2 = getTmpSym($$->node_type);
 																		emit(pair<string, sEntry*>("inttoreal",NULL),$1->place,pair<string, sEntry*>("",NULL),t2,-1);
-																		emit(pair<string, sEntry*>(p, lookup("-")), t2, $3->place, t1, -1);
+																		emit(pair<string, sEntry*>(p, symbol_table::lookup("-")), t2, $3->place, t1, -1);
 																}
 																else if(isInt($3->node_type) && isFloat($1->node_type)){
 																		qid t2 = getTmpSym($$->node_type);
 																		emit(pair<string, sEntry*>("inttoreal",NULL),$3->place,pair<string, sEntry*>("",NULL),t2,-1);
-																		emit(pair<string, sEntry*>(p, lookup("-")), $1->place, t2, t1, -1);
+																		emit(pair<string, sEntry*>(p, symbol_table::lookup("-")), $1->place, t2, t1, -1);
 																}
 																else {
-																		emit(pair<string, sEntry*>(p, lookup("-")), $1->place, $3->place, t1, -1);
+																		emit(pair<string, sEntry*>(p, symbol_table::lookup("-")), $1->place, $3->place, t1, -1);
 																}
 																$$->place = t1;
 																$$->nextlist = {};
@@ -662,12 +662,12 @@ shift_expression
 														Node* n = new Node($2);
 														n->mknode((char*)NULL,$1,$3);
 														$$ = n;
-                          								char* a = shiftExpr($1->node_type,$3->node_type);                        
+                          								char* a = type_check::shiftExpr($1->node_type,$3->node_type);                        
 														if(a){
 															$$->node_type = $1->node_type;
 															 //===========3AC======================//
 															qid t1 = getTmpSym($$->node_type);
-															int k = emit(pair<string, sEntry*>("LEFT_OP", lookup("<<")), $1->place, $3->place, t1, -1);
+															int k = emit(pair<string, sEntry*>("LEFT_OP", symbol_table::lookup("<<")), $1->place, $3->place, t1, -1);
 															$$->place = t1;
 															$$->nextlist={};
                         									//====================================//
@@ -677,12 +677,12 @@ shift_expression
 	| shift_expression RIGHT_OP additive_expression		{Node* n = new Node($2);
 														n->mknode((char*)NULL,$1,$3);
 														$$ = n;
-														char* a = shiftExpr($1->node_type,$3->node_type);                        
+														char* a = type_check::shiftExpr($1->node_type,$3->node_type);                        
 														if(a){
 															$$->node_type = $1->node_type;
 															//===========3AC======================//
 															qid t1 = getTmpSym($$->node_type);
-															int k = emit(pair<string, sEntry*>("RIGHT_OP", lookup(">>")), $1->place, $3->place, t1, -1);
+															int k = emit(pair<string, sEntry*>("RIGHT_OP", symbol_table::lookup(">>")), $1->place, $3->place, t1, -1);
 															$$->place = t1;
 															$$->nextlist={};
 															//====================================//
@@ -697,7 +697,7 @@ relational_expression
 														n->mknode((char*)NULL,$1,$3);
 														$$ = n;
 														
-														char* a = relationalExpr($1->node_type,$3->node_type,"<");
+														char* a = type_check::relationalExpr($1->node_type,$3->node_type,"<");
                 										if(a){
 															if(!strcmp(a,"bool")) $$->node_type = string("bool");
                     										else if(!strcmp(a,"Bool")){
@@ -706,7 +706,7 @@ relational_expression
                     										}
 															//===========3AC======================//
 																qid t1 = getTmpSym($$->node_type);
-																int k =  emit(pair<string, sEntry*>("<", lookup("<")), $1->place, $3->place, t1, -1);
+																int k =  emit(pair<string, sEntry*>("<", symbol_table::lookup("<")), $1->place, $3->place, t1, -1);
 																$$->place = t1;
 																$$->nextlist={};
 															//====================================//
@@ -720,7 +720,7 @@ relational_expression
 			Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-			char* a=relationalExpr($1->node_type,$3->node_type,">");                 
+			char* a = type_check::relationalExpr($1->node_type,$3->node_type,">");                 
 			if(a){ 
 				if(!strcmp(a,"bool")) $$->node_type = string("bool");
 				else if(!strcmp(a,"Bool")){
@@ -729,7 +729,7 @@ relational_expression
 				}
 				 //===========3AC======================//
                            qid t1 = getTmpSym($$->node_type);
-                           int k = emit(pair<string, sEntry*>(">", lookup(">")), $1->place, $3->place, t1, -1);
+                           int k = emit(pair<string, sEntry*>(">", symbol_table::lookup(">")), $1->place, $3->place, t1, -1);
                            $$->place = t1;
                            $$->nextlist = {};
                 //====================================//
@@ -744,7 +744,7 @@ relational_expression
             Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-            char* a = relationalExpr($1->node_type,$3->node_type,"<=");               
+            char* a = type_check::relationalExpr($1->node_type,$3->node_type,"<=");               
 			if(a){
 				if(!strcmp(a,"bool")) $$->node_type = string("bool");
                 else if(!strcmp(a,"Bool")){
@@ -752,7 +752,7 @@ relational_expression
                     yyerror("Warning: comparison between pointer and integer");}
 					  //===========3AC======================//
                            qid t1 = getTmpSym($$->node_type);
-                          int k= emit(pair<string, sEntry*>("LE_OP", lookup("<=")), $1->place, $3->place, t1, -1);
+                          int k= emit(pair<string, sEntry*>("LE_OP", symbol_table::lookup("<=")), $1->place, $3->place, t1, -1);
                            $$->place = t1;
                            $$->nextlist = {};
                      //====================================//
@@ -766,7 +766,7 @@ relational_expression
 			Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-			char* a = relationalExpr($1->node_type,$3->node_type,">=");            
+			char* a = type_check::relationalExpr($1->node_type,$3->node_type,">=");            
 			if(a){  
 				if(!strcmp(a,"bool")) $$->node_type = string("bool");
 				else if(!strcmp(a,"Bool")){
@@ -775,7 +775,7 @@ relational_expression
 					}
 					//===========3AC======================//
                            qid t1 = getTmpSym($$->node_type);
-                           int k = emit(pair<string, sEntry*>("GE_OP", lookup(">=")), $1->place, $3->place, t1, -1);
+                           int k = emit(pair<string, sEntry*>("GE_OP", symbol_table::lookup(">=")), $1->place, $3->place, t1, -1);
                            $$->place = t1;
                            $$->nextlist ={};
                     //====================================//
@@ -794,7 +794,7 @@ equality_expression
 			Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-            char* a = equalityExpr($1->node_type,$3->node_type);
+            char* a = type_check::equalityExpr($1->node_type,$3->node_type);
             if(a){ 
 				if(!strcmp(a,"true")){
                 	yyerror("Warning: Comparision between pointer and Integer");
@@ -802,7 +802,7 @@ equality_expression
             	$$->node_type = "bool";
 				 //===========3AC======================//
                            qid t1 = getTmpSym($$->node_type);
-                           int k = emit(pair<string, sEntry*>("EQ_OP", lookup("\=\=")), $1->place, $3->place, t1, -1);
+                           int k = emit(pair<string, sEntry*>("EQ_OP", symbol_table::lookup("\=\=")), $1->place, $3->place, t1, -1);
                            $$->place = t1;
                            $$->nextlist = {};
                 //====================================//
@@ -815,7 +815,7 @@ equality_expression
 			Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-			char* a = equalityExpr($1->node_type,$3->node_type);
+			char* a = type_check::equalityExpr($1->node_type,$3->node_type);
 			if(a){   
 				if(!strcmp(a,"true")){
 					yyerror("Warning: Comparision between pointer and Integer");
@@ -823,7 +823,7 @@ equality_expression
 				$$->node_type = "bool";
 				//===========3AC======================//
                            qid t1 = getTmpSym($$->node_type);
-                           int k = emit(pair<string, sEntry*>("NE_OP", lookup("!=")), $1->place, $3->place, t1, -1);
+                           int k = emit(pair<string, sEntry*>("NE_OP", symbol_table::lookup("!=")), $1->place, $3->place, t1, -1);
                            $$->place = t1;
                            $$->nextlist ={};
                 //====================================//
@@ -840,13 +840,13 @@ and_expression
         Node* n = new Node($2);
 		n->mknode((char*)NULL,$1,$3);
 		$$ = n;
-        char* a = bitwiseExpr($1->node_type,$3->node_type);
+        char* a = type_check::conditionalExpr($1->node_type,$3->node_type);
         if(a){
             if(!strcmp(a,"true")) { $$->node_type = string("bool"); }
             else{   $$->node_type = string("long long");}
 			  //===========3AC======================//
                            qid t1 = getTmpSym($$->node_type);
-                           int k= emit(pair<string, sEntry*>("&", lookup("&")), $1->place, $3->place, t1, -1);
+                           int k= emit(pair<string, sEntry*>("&", symbol_table::lookup("&")), $1->place, $3->place, t1, -1);
                            $$->place = t1;
                            $$->nextlist={};
              //====================================//
@@ -865,13 +865,13 @@ exclusive_or_expression
         Node* n = new Node($2);
 		n->mknode((char*)NULL,$1,$3);
 		$$ = n;
-        char* a = bitwiseExpr($1->node_type,$3->node_type);
+        char* a = type_check::bitwiseExpr($1->node_type,$3->node_type);
         if(a){
             if(!strcmp(a,"true")) { $$->node_type = string("bool"); }
             else{   $$->node_type = string("long long");}
 			//===========3AC======================//
                            qid t1 = getTmpSym($$->node_type);
-                           int k = emit(pair<string, sEntry*>("^", lookup("^")), $1->place, $3->place, t1, -1);
+                           int k = emit(pair<string, sEntry*>("^", symbol_table::lookup("^")), $1->place, $3->place, t1, -1);
                            $$->place = t1;
                            $$->nextlist={};
             //====================================//
@@ -890,13 +890,13 @@ inclusive_or_expression
             Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-            char* c = bitwiseExpr($1->node_type,$3->node_type);
+            char* c = type_check::bitwiseExpr($1->node_type,$3->node_type);
             if(c){
                 if(!strcmp(c,"true")) { $$->node_type = string("bool"); }
                 else{   $$->node_type = string("long long");}
 				 //===========3AC======================//
                            qid t1 = getTmpSym($$->node_type);
-                           int k =  emit(pair<string, sEntry*>("|", lookup("|")), $1->place, $3->place, t1, -1);
+                           int k =  emit(pair<string, sEntry*>("|", symbol_table::lookup("|")), $1->place, $3->place, t1, -1);
                            $$->place = t1;
                            $$->nextlist={};
                 //====================================//
@@ -911,8 +911,8 @@ inclusive_or_expression
 M11
   : logical_and_expression AND_OP {
                         if($1->truelist.begin()==$1->truelist.end()){
-                            int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("IF", lookup("if")), $1->place, pair<string, sEntry*>("", NULL ),0);
-                            int k1 = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+                            int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("IF", symbol_table::lookup("if")), $1->place, pair<string, sEntry*>("", NULL ),0);
+                            int k1 = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
                             $1->truelist.push_back(k);
                             $1->falselist.push_back(k1);
 
@@ -933,8 +933,8 @@ logical_and_expression
 		$$->node_type == string("bool");
 		 //===========3AC======================//
 		if($3->truelist.begin()==$3->truelist.end()){
-			int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("IF", lookup("if")), $3->place, pair<string, sEntry*>("", NULL ),0);
-			int k1 = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+			int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("IF", symbol_table::lookup("if")), $3->place, pair<string, sEntry*>("", NULL ),0);
+			int k1 = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
 			$3->truelist.push_back(k);
 			$3->falselist.push_back(k1);
 	}
@@ -950,8 +950,8 @@ logical_and_expression
 	M21
   : logical_or_expression OR_OP {
                         if($1->truelist.begin()==$1->truelist.end()){
-                            int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("IF", lookup("if")), $1->place, pair<string, sEntry*>("", NULL ),0);
-                            int k1 = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+                            int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("IF", symbol_table::lookup("if")), $1->place, pair<string, sEntry*>("", NULL ),0);
+                            int k1 = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
                             $1->truelist.push_back(k);
                             $1->falselist.push_back(k1);
 
@@ -974,8 +974,8 @@ logical_or_expression
 M31
   : logical_or_expression '?' {
                         if($1->truelist.begin()==$1->truelist.end()){
-                            int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("IF", lookup("if")), $1->place, pair<string, sEntry*>("", NULL ),0);
-                            int k1 = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+                            int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("IF", symbol_table::lookup("if")), $1->place, pair<string, sEntry*>("", NULL ),0);
+                            int k1 = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
                             $1->truelist.push_back(k);
                             $1->falselist.push_back(k1);
 
@@ -986,8 +986,8 @@ M31
 
 N
  : %empty {
-                emit(pair<string, sEntry*>("=", lookup("=")), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), -1);
-                $$ = emit(pair<string, sEntry*>("GOTO", lookup("goto")), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), 0);
+                emit(pair<string, sEntry*>("=", symbol_table::lookup("=")), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), -1);
+                $$ = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), 0);
  }
  ;
 
@@ -1000,7 +1000,7 @@ conditional_expression
 		Node* n = new Node("?");
 		n->mknode((char*)NULL,$3,$6);
 		$$ = n;
-		char* c = conditionalExpr($3->node_type,$6->node_type);
+		char* c = type_check::conditionalExpr($3->node_type,$6->node_type);
 		if(c){
 			string str = c;
 			$$->node_type = str;
@@ -1020,7 +1020,7 @@ assignment_expression
 		Node* n = new Node($2);
 		n->mknode((char*)NULL,$1,$3);
 		$$ = n;
-    	char* c = assignmentExpr($1->node_type,$3->node_type,$2);
+    	char* c = type_check::assignmentExpr($1->node_type,$3->node_type,$2);
 	
         if(c){
 
@@ -1046,7 +1046,7 @@ assignment_expression
         }
         else{ yyerror("Error: Incompatible types when assigning type \'%s\' to \'%s\' ",($1->node_type).c_str(),($3->node_type).c_str()); }
      	if($1->expr_type==3 && $3->is_init==1){ 
-			update_isInit($1->node_key);
+			symbol_table::update_isInit($1->node_key);
 		} 
     }
 	
@@ -1138,12 +1138,12 @@ init_declarator
 			strcpy(t,($1->node_type).c_str());
 			char *key =new char();
 			strcpy(key,($1->node_key).c_str());
-			if(scopeLookup($1->node_key)){ 
+			if(symbol_table::scopeLookup($1->node_key)){ 
 				yyerror("Error: redeclaration of \'%s\'",key);
 			}else if($1->node_type==string("void")){
 					yyerror("Error: Variable or field \'%s\' declared void",key);
 				}else {  
-					insertSymbol(*curr,key,t,$1->size,0,0);
+					symbol_table::insertSymbol(*curr,key,t,$1->size,0,0);
 				}
 		} 
     }
@@ -1158,7 +1158,7 @@ init_declarator
             strcpy(key,($1->node_key).c_str());
 			
 			//cout << flag<<endl;
-            if(scopeLookup($1->node_key)){ 
+            if(symbol_table::scopeLookup($1->node_key)){ 
                 yyerror("Error: redeclaration of \'%s\'",key);
             }else if($1->node_type==string("void")){
 				yyerror("Error: Variable or field \'%s\' declared void",key);
@@ -1166,7 +1166,7 @@ init_declarator
 				yyerror("Error: Type Mismatch: %s is  being assigned to %s", ($1->node_type).c_str(), ($4->node_type).c_str());	
 			}
 			else { 
-				insertSymbol(*curr,key,t,$1->size,0,0);
+				symbol_table::insertSymbol(*curr,key,t,$1->size,0,0);
 			}
         } 
 	}
@@ -1347,7 +1347,7 @@ declarator
                						$$->expr_type=1;}
                						if($2->expr_type==2){ funcName = $2->node_key; funcType = $2->node_type; }   
                 					char* a = new char();
-                					strcpy(a,($$->node_type).c_str());$$->size = getSize(a);
+                					strcpy(a,($$->node_type).c_str());$$->size = symbol_table::getSize(a);
 									 //------------------3AC---------------------------------//
                        				 $$->place = pair<string, sEntry*>($$->node_key, NULL);
                         			//-------------------------------------------------------//
@@ -1370,7 +1370,7 @@ direct_declarator
 		$$->node_type=type; 
 		char* c = new char();
         strcpy(c,type.c_str()); 
-		$$->size = getSize(c);
+		$$->size = symbol_table::getSize(c);
 		//------------------3AC---------------------------------//
 		$$->place = pair<string, sEntry*>($$->node_key, NULL);
 		//-------------------------------------------------------//
@@ -1400,7 +1400,7 @@ direct_declarator
         else { 
 			char* c = new char();
             strcpy(c,($$->node_type).c_str());
-            $$->size = getSize(c); 
+            $$->size = symbol_table::getSize(c); 
 		}
 	}	
 	| direct_declarator '[' ']'		{
@@ -1413,10 +1413,10 @@ direct_declarator
 		}   
             char* c = new char();
             strcpy(c,($$->node_type).c_str());
-            $$->size = getSize(c);
+            $$->size = symbol_table::getSize(c);
             strcpy(c,($1->node_type).c_str());
             $$->expr_type=15;
-            $$->iVal=getSize(c);
+            $$->iVal = symbol_table::getSize(c);
 			 //------------------3AC---------------------------------//
 			$$->place = pair<string, sEntry*>($$->node_key, NULL);
 			//-------------------------------------------------------//      
@@ -1429,13 +1429,13 @@ direct_declarator
 				$$->node_key=$1->node_key;
                 $$->expr_type=2;
                 $$->node_type=$1->node_type;
-                insertFuncArguments($1->node_key,funcArguments);
+                symbol_table::insertFuncArguments($1->node_key,funcArguments);
 				string empty = "";
                 funcArguments=empty;
 			}
             char* c = new char();
             strcpy(c,($$->node_type).c_str());
-            $$->size = getSize(c);
+            $$->size = symbol_table::getSize(c);
 			//------------------3AC---------------------------------//
 			$$->place = pair<string, sEntry*>($$->node_key, NULL);
 			backPatch($4->nextlist, $6);
@@ -1457,7 +1457,7 @@ direct_declarator
 		
 		char* c = new char();
         strcpy(c,($$->node_type).c_str());
-        $$->size = getSize(c);
+        $$->size = symbol_table::getSize(c);
 			//------------------3AC---------------------------------//
 			$$->place = pair<string, sEntry*>($$->node_key, NULL);
 			string em =  "func " + $$->node_key+ " begin:";
@@ -1471,7 +1471,7 @@ direct_declarator
 			$$ = n;
           	if($1->expr_type==1){ 
                 $$->node_key=$1->node_key;
-                insertFuncArguments($1->node_key,string(""));
+                symbol_table::insertFuncArguments($1->node_key,string(""));
                 $$->expr_type=2;
                 string empty = "";
                 funcArguments=empty;
@@ -1479,7 +1479,7 @@ direct_declarator
             $$->node_type=$1->node_type;
             char* c = new char();
             strcpy(c,($$->node_type).c_str());
-            $$->size = getSize(c);
+            $$->size = symbol_table::getSize(c);
 			 //------------------3AC---------------------------------//
 			$$->place = pair<string, sEntry*>($$->node_key, NULL);
 			string em =  "func " + $$->node_key+ " begin:";
@@ -1562,11 +1562,11 @@ parameter_declaration
                 strcpy(c,($2->node_type).c_str());
                 char *key =new char();
                 strcpy(key,($2->node_key).c_str());
-                if(scopeLookup($2->node_key)){ 
+                if(symbol_table::scopeLookup($2->node_key)){ 
 					yyerror("Error: redeclaration of %s",key);
 				}
                 else {  
-					insertSymbol(*curr,key,c,$2->size,0,1);
+					symbol_table::insertSymbol(*curr,key,c,$2->size,0,1);
 				}
                 if(funcArguments==string(""))
 					funcArguments=($2->node_type);
@@ -1677,7 +1677,7 @@ initializer_list
 			n->mknode((char*) NULL, $1 ,$4);    
 			$$ = n;      
 			$$->node_type = $1->node_type;
-           	char* a =validAssign($1->node_type,$4->node_type);
+           	char* a = type_check::validAssign($1->node_type,$4->node_type);
                if(a){
                     if(!strcmp(a,"true")){ ; }
                     if(!strcmp(a,"warning")){ ;
@@ -1763,8 +1763,8 @@ compound_statement
 	| M1  block_item_list '}'  {if(blockSym){ string s($1);
                                     s=s+string(".csv");
                                     string u($1);
-                                    printSymTables(curr,s);
-                                    updateSymTable(u); blockSym--;
+                                    symbol_table::printSymTables(curr,s);
+                                    symbol_table::updateSymTable(u); blockSym--;
                                  } $$ = $2;
                                }
 	;
@@ -1925,7 +1925,7 @@ jump_statement
 		n->mknode((char*) NULL, l1, l2);
 		$$ = n;
 								//-----------3AC---------------------//
-                                 int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+                                 int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
                                  gotoIndexPatchListStorage($2, k);
                                 //-----------------------------------//
 	}
@@ -1933,7 +1933,7 @@ jump_statement
 						n->mkleaf();
 						$$ = n;
 							//-----------3AC---------------------//
-                                 int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+                                 int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
                                  $$->continuelist.push_back(k);
                                //-----------------------------------//
 					}
@@ -1941,7 +1941,7 @@ jump_statement
 						n->mkleaf();
 						$$ = n;
 					//-----------3AC---------------------//
-					int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+					int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
 					$$->breaklist.push_back(k);
 					//-----------------------------------//
 					}
@@ -1950,7 +1950,7 @@ jump_statement
 						n->mkleaf();
 						$$ = n;
 					//------------3AC----------------//
-					emit(pair<string, sEntry*>("RETURN", lookup("return")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),-1);
+					emit(pair<string, sEntry*>("RETURN", symbol_table::lookup("return")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),-1);
 					//------------------------------//
 					}
 	| RETURN expression ';' 	{Node* n = new Node("jump_statement");
@@ -1959,7 +1959,7 @@ jump_statement
 								n->mknode((char*) NULL, l1, $2);
 								$$ = n;
 								//------------3AC----------------//
-								emit(pair<string, sEntry*>("RETURN", lookup("return")), $2->place, pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),-1);
+								emit(pair<string, sEntry*>("RETURN", symbol_table::lookup("return")), $2->place, pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),-1);
 								//------------------------------//
 								}
 	;
@@ -1998,9 +1998,9 @@ function_definition
 			type = empty;
         	string str1 = $3;
         	string str2 = str1 + string(".csv");
-            printSymTables(curr,str2); 
+            symbol_table::printSymTables(curr,str2); 
             symNumber=0;
-            updateSymTable(str1);
+            symbol_table::updateSymTable(str1);
 			Node* n = new Node("function_definition");
 			n->mknode( $1, $2, $4, $5,(char*) NULL);
 			$$ = n;
@@ -2015,9 +2015,9 @@ function_definition
 			type = empty;
         	string str1 = $3;
         	string str2 = str1 + string(".csv");
-            printSymTables(curr,str2); 
+            symbol_table::printSymTables(curr,str2); 
             symNumber=0;
-            updateSymTable(str1);
+            symbol_table::updateSymTable(str1);
 			Node* n = new Node("function_definition");			
 			n->mknode($1, $2, $4);
 			$$ = n;
@@ -2032,9 +2032,9 @@ function_definition
 			type = empty;
         	string str1 = $2;
         	string str2 = str1 + string(".csv");
-            printSymTables(curr,str2); 
+            symbol_table::printSymTables(curr,str2); 
             symNumber=0;
-            updateSymTable(str1);
+            symbol_table::updateSymTable(str1);
 			Node* n = new Node("function_definition");
 			n->mknode((Node*)NULL, $1, $3, $4,(char*) NULL);
 			$$ = n;	
@@ -2045,9 +2045,9 @@ function_definition
 			type = empty;
         	string str1 = $2;
         	string str2 = str1 + string(".csv");
-            printSymTables(curr,str2); 
+            symbol_table::printSymTables(curr,str2); 
             symNumber=0;
-            updateSymTable(str1);
+            symbol_table::updateSymTable(str1);
 			Node* n = new Node("function_definition");
 			n->mknode((Node*)NULL, $1, $3);
 			$$ = n;
@@ -2057,7 +2057,7 @@ function_definition
 GOTO_emit
 	: %empty {
 
-							$$ = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+							$$ = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
 	}
 	;
 
@@ -2071,7 +2071,7 @@ M1
     :  '{'       { if(isFunc==0) {symNumber++;
                         symFileName = /*string("symTableFunc")+to_string(funcSym)*/funcName+string("Block")+to_string(symNumber);
                          scope=S_BLOCK;
-                         makeSymTable(symFileName,scope,string("12345"));
+                         symbol_table::makeSymTable(symFileName,scope,string("12345"));
                         char * y=new char();
                         strcpy(y,symFileName.c_str());
                         $$ = y;
@@ -2091,7 +2091,7 @@ M2
                 isFunc = 1;
                 funcSym++;
             	symFileName = funcName;
-                makeSymTable(symFileName,scope,funcType);
+                symbol_table::makeSymTable(symFileName,scope,funcType);
                 char* c= new char();
                 strcpy(c,symFileName.c_str());
                 $$ = c;
@@ -2103,15 +2103,15 @@ M3
 	   		string empty = "";
 	   		type = empty; 
             funcArguments = empty; 
-            paramTable();  
+            symbol_table::paramTable();  
 		}
     ;
 
 M4
 	:  IF '(' expression ')' {
 		if($3->truelist.begin()==$3->truelist.end()){
-			int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("IF", lookup("if")), $3->place, pair<string, sEntry*>("", NULL ),0);
-			int k1 = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+			int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("IF", symbol_table::lookup("if")), $3->place, pair<string, sEntry*>("", NULL ),0);
+			int k1 = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
 			$3->truelist.push_back(k);
 			$3->falselist.push_back(k1);
 
@@ -2125,9 +2125,9 @@ M5
 									$$=$2;
 									//-----------3AC--------------------//
 									qid t = getTmpSym("bool");
-									int k = emit(pair<string, sEntry*>("EQ_OP", lookup("\=\=")),pair<string, sEntry*>("", NULL), $2->place, t, -1);
-									int k1 = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("IF", lookup("if")), t, pair<string, sEntry*>("", NULL ),0);
-									int k2 = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+									int k = emit(pair<string, sEntry*>("EQ_OP", symbol_table::lookup("\=\=")),pair<string, sEntry*>("", NULL), $2->place, t, -1);
+									int k1 = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("IF", symbol_table::lookup("if")), t, pair<string, sEntry*>("", NULL ),0);
+									int k2 = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
 									$$->caselist.push_back(k);
 									$$->truelist.push_back(k1);
 									$$->falselist.push_back(k2);
@@ -2140,8 +2140,8 @@ M5
 M6
 	:   expression  {
 							if($1->truelist.begin()==$1->truelist.end()){
-								int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("IF", lookup("if")), $1->place, pair<string, sEntry*>("", NULL ),0);
-								int k1 = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+								int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("IF", symbol_table::lookup("if")), $1->place, pair<string, sEntry*>("", NULL ),0);
+								int k1 = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
 								$1->truelist.push_back(k);
 								$1->falselist.push_back(k1);
 
@@ -2153,8 +2153,8 @@ M6
 M7
 	:   expression_statement  {
 							if($1->truelist.begin()==$1->truelist.end()){
-								int k = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("IF", lookup("if")), $1->place, pair<string, sEntry*>("", NULL ),0);
-								int k1 = emit(pair<string, sEntry*>("GOTO", lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
+								int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("IF", symbol_table::lookup("if")), $1->place, pair<string, sEntry*>("", NULL ),0);
+								int k1 = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
 								$1->truelist.push_back(k);
 								$1->falselist.push_back(k1);
 
@@ -2189,14 +2189,14 @@ int  main(int argc,char **argv){
 			return -1;
 		}
 		funcName = string("GST");
-		stInitialize();
+		symbol_table::stInitialize();
 		graphStart();
 		yyparse();
 		if(k==0) graphEnd();
 		display3ac();
 		symFileName = "GST.csv";
-		printSymTables(curr,symFileName);
-		printFuncArguments();
+		symbol_table::printSymTables(curr,symFileName);
+		symbol_table::printFuncArguments();
 		
 	}
 	return 0;

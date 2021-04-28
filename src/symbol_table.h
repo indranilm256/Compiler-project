@@ -59,32 +59,26 @@ extern map<int, string> statusMap;
 
 
 class symbol_table{
-public:
-    
-
-    symbol_table();
-    
-
-    void paramTable();
-    ull getSize (char* id);
-    string returnSymType(string key);
-    void switchItemMap();
-    void fprintStruct(sEntry *a, FILE *file);
-    void stInitialize();
-    void addKeywords();
-    void update_isInit(string key);
-    void makeSymTable(string name,int type,string funcType);
-    void insertFuncArguments(string a,string b);
+public:   
+    static void paramTable();
+    static ull getSize (char* id);
+    static string returnSymType(string key);
+    static void switchItemMap();
+    static void fprintStruct(sEntry *a, FILE *file);
+    static void stInitialize();
+    static void addKeywords();
+    static void update_isInit(string key);
+    static void makeSymTable(string name,int type,string funcType);
+    static void insertFuncArguments(string a,string b);
     //void updateKey(string key,void *val);
-    void updateSymTable(string key);
-    sEntry* lookup(string a);
-    sEntry* scopeLookup(string a);
-    sEntry* makeEntry(string type, ull size, ll offset,int isInit);
-    void insertSymbol(symTable& table,string key,string type,ull size,ll offset,int isInit);
-    void printSymTables(symTable *a, string filename);
-    void printFuncArguments();
-    string funcArgList(string key);
-    void updateSymtableSize(string key);
-    void updateOffset(string key1,string key2);
-
+    static void updateSymTable(string key);
+    static sEntry* lookup(string a);
+    static sEntry* scopeLookup(string a);
+    static sEntry* makeEntry(string type, ull size, ll offset,int isInit);
+    static void insertSymbol(symTable& table,string key,string type,ull size,ll offset,int isInit);
+    static void printSymTables(symTable *a, string filename);
+    static void printFuncArguments();
+    static string funcArgList(string key);
+    static void updateSymtableSize(string key);
+    static void updateOffset(string key1,string key2);
 };

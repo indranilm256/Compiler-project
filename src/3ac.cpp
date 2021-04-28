@@ -24,8 +24,8 @@ pair<string, sEntry*> getTmpSym(string type){
   string tmp = getTmpVar();
   char *cstr = new char[type.length() + 1];
   strcpy(cstr, type.c_str());
-  insertSymbol(*curr, tmp, type, getSize(cstr),0, 1);
-  return pair <string, sEntry* >(tmp, lookup(tmp));
+  symbol_table::insertSymbol(*curr, tmp, type, symbol_table::getSize(cstr),0, 1);
+  return pair <string, sEntry* >(tmp, symbol_table::lookup(tmp));
 }
 
 int emit (qid op, qid id1, qid id2, qid  res, int stmtNum){
@@ -117,28 +117,28 @@ int assignmentExpression(char *o, string type, string type1, string type3, qid p
   op1 = op;
 	if(isInt(type1) && isInt(type3)){
 		op += "int";
-	  if(strcmp(o,"=")) k= emit(pair<string, sEntry*>(op, lookup(op1)), place1, place3, t, -1);
+	  if(strcmp(o,"=")) k= emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, place3, t, -1);
 	}
 	else if(isFloat(type1) && isInt(type3)){
 		t2 = getTmpSym(type);
 		k = emit(pair<string, sEntry*>("inttoreal",NULL), place3,pair<string, sEntry*>("",NULL),t2,-1);
 		op += "real";
-		if(strcmp(o,"=")) emit(pair<string, sEntry*>(op, lookup(op1)), place1, t2, t, -1);
+		if(strcmp(o,"=")) emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, t2, t, -1);
     b=1;
 	}
 	else if(isFloat(type3) && isInt(type1)){
 		t2 = getTmpSym(type);
 		k = emit(pair<string, sEntry*>("realtoint",NULL),place3,pair<string, sEntry*>("",NULL),t2,-1);
 		op += "int";
-		if(strcmp(o,"=")) emit(pair<string, sEntry*>(op, lookup(op1)), place1, t2, t, -1);
+		if(strcmp(o,"=")) emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, t2, t, -1);
     b=1;
 	}
 	else if(isFloat(type3) && isFloat(type1)){
 		op += "real";
-		if(strcmp(o,"=")) k=emit(pair<string, sEntry*>(op, lookup(op1)), place1, place3, t, -1);
+		if(strcmp(o,"=")) k=emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, place3, t, -1);
 	}
-  if(a && b){emit(pair<string, sEntry*>("=", lookup("=")),  t2, pair<string, sEntry*>("", NULL), place1, -1);}
-  else k = emit(pair<string, sEntry*>("=", lookup("=")),  t, pair<string, sEntry*>("", NULL), place1, -1);
+  if(a && b){emit(pair<string, sEntry*>("=", symbol_table::lookup("=")),  t2, pair<string, sEntry*>("", NULL), place1, -1);}
+  else k = emit(pair<string, sEntry*>("=", symbol_table::lookup("=")),  t, pair<string, sEntry*>("", NULL), place1, -1);
 
 return k;
 }
@@ -153,8 +153,8 @@ void assignment2(char *o, string type, string type1, string type3, qid place1, q
         op1 = op;
         if(!strcmp(o,"<<=")){ op="LEFT_OP"; op1="<<"; }
         if(!strcmp(o,">>=")){ op="RIGHT_OP"; op1=">>"; }
-        emit(pair<string, sEntry*>(op, lookup(op1)), place1, place3, t, -1);
-	emit(pair<string, sEntry*>("=", lookup("=")),  t, pair<string, sEntry*>("", NULL), place1, -1);
+        emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, place3, t, -1);
+	emit(pair<string, sEntry*>("=", symbol_table::lookup("=")),  t, pair<string, sEntry*>("", NULL), place1, -1);
 
 }
 
