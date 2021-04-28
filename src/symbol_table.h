@@ -1,4 +1,5 @@
 
+
 #include <iostream>
 #include <string>
 #include <string.h>
@@ -14,6 +15,19 @@ enum symTable_types{
 };
 
 // symbol table entry data structure
+
+//////////////////////////////////
+/*class sEntry{
+public:
+    string type;
+    int is_init;
+ //   void *value;
+    ull size;
+    ll offset;
+};*/
+/////////////////////////////////
+
+
 typedef struct sTableEntry{
     string type;
     int is_init;
@@ -21,13 +35,13 @@ typedef struct sTableEntry{
     ull size;
     ll offset;
 } sEntry;
+
+
+
 typedef unordered_map<string,sEntry *> symTable;
 
-extern map<string , string> funcArgumentMap;
-extern map<symTable *, symTable*> tParent;
-extern map<symTable *, int > symTable_types;
-extern map<string ,int> switchItem;
-extern map<int, string> statusMap;
+//extern long long offsetNext[100];
+//extern int offsetNo;
 extern long int blockSize[100];
 extern int blockNo;
 extern long long offsetG[100];
@@ -37,25 +51,40 @@ extern symTable GST;
 extern symTable *curr;
 extern int is_next;
 
-void paramTable();
-ull getSize (char* id);
-string returnSymType(string key);
-void switchItemMap();
-void fprintStruct(sEntry *a, FILE *file);
-void stInitialize();
-void addKeywords();
-void update_isInit(string key);
-void makeSymTable(string name,int type,string funcType);
-void insertFuncArguments(string a,string b);
-//void updateKey(string key,void *val);
-void updateSymTable(string key);
-sEntry* lookup(string a);
-sEntry* scopeLookup(string a);
-sEntry* makeEntry(string type, ull size, ll offset,int isInit);
-void insertSymbol(symTable& table,string key,string type,ull size,ll offset,int isInit);
-void printSymTables(symTable *a, string filename);
-void printFuncArguments();
-string funcArgList(string key);
-void updateSymtableSize(string key);
-void updateOffset(string key1,string key2);
-	
+extern map<string , string> funcArgumentMap;
+extern map<symTable *, symTable*> tParent;
+extern map<symTable *, int > symTable_type;
+extern map<string ,int> switchItem;
+extern map<int, string> statusMap;
+
+
+class symbol_table{
+public:
+    
+
+    symbol_table();
+    
+
+    void paramTable();
+    ull getSize (char* id);
+    string returnSymType(string key);
+    void switchItemMap();
+    void fprintStruct(sEntry *a, FILE *file);
+    void stInitialize();
+    void addKeywords();
+    void update_isInit(string key);
+    void makeSymTable(string name,int type,string funcType);
+    void insertFuncArguments(string a,string b);
+    //void updateKey(string key,void *val);
+    void updateSymTable(string key);
+    sEntry* lookup(string a);
+    sEntry* scopeLookup(string a);
+    sEntry* makeEntry(string type, ull size, ll offset,int isInit);
+    void insertSymbol(symTable& table,string key,string type,ull size,ll offset,int isInit);
+    void printSymTables(symTable *a, string filename);
+    void printFuncArguments();
+    string funcArgList(string key);
+    void updateSymtableSize(string key);
+    void updateOffset(string key1,string key2);
+
+};
