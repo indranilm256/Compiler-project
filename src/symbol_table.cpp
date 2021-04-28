@@ -10,8 +10,10 @@ map<string ,int> switchItem;
 map<int, string> statusMap;
 long int blockSize[100];
 int blockNo ;
+//////////////////////////////
 long long offsetNext[100];
 int offsetNo;
+////////////////////////////////
 long long offsetG[100];
 int offsetGNo;
 
@@ -19,7 +21,8 @@ symTable GST;
 int is_next;
 symTable *curr;
 
-void switchItemMap(){
+void symbol_table:: switchItemMap(){
+   //symbol_table temp=this;
    statusMap.insert(make_pair<int, string>(1,"iVal"));
    statusMap.insert(make_pair<int, string>(2,"fVal"));
    statusMap.insert(make_pair<int, string>(3,"dVal"));
@@ -36,7 +39,7 @@ void switchItemMap(){
    switchItem.insert(make_pair<string, int>("TYPEDEF_NAME", 1));
 }
 
-void stInitialize(){
+void symbol_table:: stInitialize(){
     for(blockNo=0;blockNo<100;blockNo++){
         blockSize[blockNo]=0;
     }
@@ -55,14 +58,14 @@ void stInitialize(){
     funcArgumentMap.insert(pair<string,string>(string("strlen"),string("void*")));
 
 }
-void paramTable(){   
+void symbol_table:: paramTable(){   
       offsetNo++;
       offsetNext[offsetNo]=offsetG[offsetGNo];
       makeSymTable(string("Next"),S_FUNC,string(""));
       is_next=1;
 }
 
-sEntry* makeEntry(string type,ull size,ll offset,int isInit){
+sEntry* symbol_table:: makeEntry(string type,ull size,ll offset,int isInit){
     sEntry* mynew = new sEntry();
     mynew->type = type;
     mynew->size = size;
@@ -71,13 +74,13 @@ sEntry* makeEntry(string type,ull size,ll offset,int isInit){
     return mynew;
 }
 
-string returnSymType(string key){
+string symbol_table:: returnSymType(string key){
     sEntry* temp = lookup(key);
     if(temp){ string a = temp->type;return a;}
     else return string();
 }
 
-void insertSymbol(symTable& table,string key,string type,ull size,ll offset, int isInit){
+void symbol_table:: insertSymbol(symTable& table,string key,string type,ull size,ll offset, int isInit){
    blockSize[blockNo] = blockSize[blockNo] + size;
    if(offset==10){ table.insert (pair<string,sEntry *>(key,makeEntry(type,size,offsetNext[offsetNo],isInit))); }
    else { table.insert (pair<string,sEntry *>(key,makeEntry(type,size,offsetG[offsetGNo],isInit))); }
@@ -85,7 +88,7 @@ void insertSymbol(symTable& table,string key,string type,ull size,ll offset, int
    return;
 }
 
-void fprintStruct(sEntry *a, FILE* file){
+void symbol_table:: fprintStruct(sEntry *a, FILE* file){
    // cout << a->type << " " << "";
     fprintf(file, "%s,",a->type.c_str());
     switch(switchItem[a->type]){
@@ -114,12 +117,12 @@ void fprintStruct(sEntry *a, FILE* file){
 
 }
 
-string funcArgList(string key){
+string symbol_table:: funcArgList(string key){
       string a = funcArgumentMap[key];
       return a;
 }
 
-void makeSymTable(string name,int type,string funcType){
+void symbol_table:: makeSymTable(string name,int type,string funcType){
   string f ;
   if(funcType!="12345") f =string("FUNC_")+funcType; else f = string("Block");
   if(is_next==1){ insertSymbol(*tParent[curr],name,f,0,10,1);
@@ -139,7 +142,7 @@ void makeSymTable(string name,int type,string funcType){
     is_next=0;
 }
 
-void updateSymTable(string key){
+void symbol_table:: updateSymTable(string key){
     curr = tParent[curr];
     offsetGNo--;
     offsetG[offsetGNo] += offsetG[offsetGNo+1];
@@ -149,7 +152,7 @@ void updateSymTable(string key){
     blockNo--;
 }
 
-sEntry* lookup(string a){
+sEntry* symbol_table:: lookup(string a){
    symTable * tmp;
    tmp = curr;
    while (1){
@@ -161,7 +164,7 @@ sEntry* lookup(string a){
    }
    return NULL;
 }
-sEntry* scopeLookup(string a){
+sEntry* symbol_table:: scopeLookup(string a){
    symTable * tmp;
    tmp = curr;
       if ((*tmp).count(a)){
@@ -177,7 +180,7 @@ void updateKey(string key,void *val){
    }
 }
 */
-ull getSize (char* id){
+ull symbol_table:: getSize (char* id){
   // integer
   if(!strcmp(id, "int")) return sizeof(int);
   if(!strcmp(id, "long int")) return sizeof(long int);
@@ -209,13 +212,13 @@ ull getSize (char* id){
 
 }
 
-void update_isInit(string key){
+void symbol_table:: update_isInit(string key){
    sEntry *temp = lookup(key);
    if(temp){
        temp->is_init =1;
    }
 }
-void updateSymtableSize(string key){
+void symbol_table:: updateSymtableSize(string key){
    sEntry *temp = lookup(key);
    if(temp){
        temp->size = blockSize[blockNo];
@@ -232,11 +235,11 @@ void updateOffset(string key1,string key2){
    }
 } 
 */
-void insertFuncArguments(string a,string b){
+void symbol_table:: insertFuncArguments(string a,string b){
      funcArgumentMap.insert(pair<string,string>(a,b));
 }
 
-void printFuncArguments(){
+void symbol_table:: printFuncArguments(){
      FILE* file = fopen("FuncArguments.csv","w");
      for(auto it:funcArgumentMap){
         fprintf(file,"%s,",it.first.c_str());
@@ -244,7 +247,7 @@ void printFuncArguments(){
      }
      fclose(file);     
 }
-void printSymTables(symTable* a, string filename) {
+void symbol_table:: printSymTables(symTable* a, string filename) {
   FILE* file = fopen(filename.c_str(), "w");
   fprintf( file,"Key,Type,Size,Offset,is_Initialized\n");
 
@@ -255,8 +258,8 @@ void printSymTables(symTable* a, string filename) {
   }
   fclose(file);
 }
-void addKeywords(){ //keywords inserted into GST
-/*
+void symbol_table:: addKeywords(){ //keywords inserted into GST
+
 //-------------------inserting keywords-------------------------------------------
 vector<string> Keyword = {"auto","break","case","char","const",
                         "continue","default","do","double","else",
@@ -277,10 +280,14 @@ vector<string> Operator = {"...",">>==","<<==","+=","-=","*=","/=","%=","&=","^=
 for(int i=0;i<50;i++){
    insertSymbol(*curr,Operator[i],"Operator",8,0,1);
 }
-*/
+
 //////////////// basic printf, scanf, strlen :: to get the code running /////////
   insertSymbol(*curr,"printf","FUNC_void",8,0,1); //
   insertSymbol(*curr,"scanf","FUNC_int",8,0,1);
+  insertSymbol(*curr,"prints","FUNC_void",8,0,1); //
   insertSymbol(*curr,"strlen","FUNC_int",8,0,1); //
-  
+  insertSymbol(*curr,"printn","FUNC_void",8,0,1); //
+  insertSymbol(*curr,"readFile","FUNC_int",8,0,1);
+  insertSymbol(*curr,"writeFile","FUNC_int",8,0,1);
+
 }
