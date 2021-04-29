@@ -22,7 +22,7 @@ int is_next;
 symTable *curr;
 
 void symbol_table:: switchItemMap(){
-   //symbol_table temp=this;
+   //symbol_table temp = this;
    statusMap.insert(make_pair<int, string>(1,"iVal"));
    statusMap.insert(make_pair<int, string>(2,"fVal"));
    statusMap.insert(make_pair<int, string>(3,"dVal"));
@@ -37,6 +37,7 @@ void symbol_table:: switchItemMap(){
    switchItem.insert(make_pair<string, int>("IDENTIFIER", 1));
    switchItem.insert(make_pair<string, int>("ENUMERATION_CONSTANT", 1));
    switchItem.insert(make_pair<string, int>("TYPEDEF_NAME", 1));
+   // cout<<switchItem["string"];
 }
 
 void symbol_table:: stInitialize(){
