@@ -40,79 +40,24 @@ int emit (qid op, qid id1, qid id2, qid  res, int stmtNum){
   return emittedCode.size()-1;
 }
 
-int getNextIndex(){
-  return emittedCode.size();
-}
-
 void backPatch(list<int> li, int p){
- /* for(int i=0; i<li.size(); ++i){
-    unsigned N = i;
-    if (li.size() > N)
-    {
-      std::list<int>::iterator it = li.begin();
-      std::advance(it, N);
-      emittedCode[*it].stmtNum = p;
-  }
-}*/
   for(auto i : li){
     emittedCode[i].stmtNum = p;
   }
-return;
-}
-
-void setResult(int a, qid p){
-  emittedCode[a].res = p;
   return;
 }
 
-void setId1(int a, qid p){
-	emittedCode[a].id1 = p;
-	return;
-}
 
-
-void setListId1(list<int> li, qid p){
- /* for(int i=0; i<li.size(); ++i){
-    unsigned N = i;
-    if (li.size() > N)
-    {
-      std::list<int>::iterator it = li.begin();
-      std::advance(it, N);
-      setId1(*it, p);
-  }
-}*/
-  for(auto i : li){
-    setId1(i,p);
-  }
-	return;
-}
-
-int assignmentExpression(char *o, string type, string type1, string type3, qid place1, qid place3){
-	qid t = place3;
+int assignment1(char *o, string type, string type1, string type3, qid place1, qid place3){
+	qid t = getTmpSym(type);
   qid t2;
 	string op;
 	string op1;
-  int k;
-  int a=0;
-  int b=0;
+  int k, a = 0, b = 0;
   if(!strcmp(o,"=")){
     a=1;
-  }
-  t = getTmpSym(type);
-	if(!strcmp(o,"*=")){
-		op = "*";
-	}
-	else if(!strcmp(o,"/=")){
-		op = "/";
-		
-	}
-	else if(!strcmp(o,"+=")){
-		op = "+";
-		
-	}
-	else if(!strcmp(o,"-=")){
-		op = "-";
-		
+  }else{
+		op = o[0];
 	}
   op1 = op;
 	if(isInt(type1) && isInt(type3)){
@@ -139,49 +84,33 @@ int assignmentExpression(char *o, string type, string type1, string type3, qid p
 	}
   if(a && b){emit(pair<string, sEntry*>("=", symbol_table::lookup("=")),  t2, pair<string, sEntry*>("", NULL), place1, -1);}
   else k = emit(pair<string, sEntry*>("=", symbol_table::lookup("=")),  t, pair<string, sEntry*>("", NULL), place1, -1);
-
-return k;
+  return k;
 }
 void assignment2(char *o, string type, string type1, string type3, qid place1, qid place3){
 	qid t = getTmpSym(type);
 	string op;
 	string op1;
-        if(!strcmp(o,"%=")) op = "%";
-        else if(!strcmp(o,"^=")) op = "^";
-        else if(!strcmp(o,"|=")) op = "|";
-        else if(!strcmp(o,"&=")) op = "&";
-        op1 = op;
-        if(!strcmp(o,"<<=")){ op="LEFT_OP"; op1="<<"; }
-        if(!strcmp(o,">>=")){ op="RIGHT_OP"; op1=">>"; }
-        emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, place3, t, -1);
-	emit(pair<string, sEntry*>("=", symbol_table::lookup("=")),  t, pair<string, sEntry*>("", NULL), place1, -1);
-
+  if(!strcmp(o,"%=")) op = "%";
+  else if(!strcmp(o,"^=")) op = "^";
+  else if(!strcmp(o,"|=")) op = "|";
+  else if(!strcmp(o,"&=")) op = "&";
+  op1 = op;
+  if(!strcmp(o,"<<=")){ op="LEFT_OP"; op1="<<"; }
+  if(!strcmp(o,">>=")){ op="RIGHT_OP"; op1=">>"; }
+  emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, place3, t, -1);
+  emit(pair<string, sEntry*>("=", symbol_table::lookup("=")),  t, pair<string, sEntry*>("", NULL), place1, -1);
 }
-
-bool gotoIndexStorage (string id, int loc){
-  if(gotoIndex.find(id) == gotoIndex.end()){
-    //not found
-    gotoIndex.insert(pair<string, int>(id, loc));
-    return true;
-  }
-  return false;
-}
-
-void gotoIndexPatchListStorage (string id, int loc){
-    gotoIndexPatchList[id].push_back(loc);
-}
-
 char* backPatchGoto(){
-  for (auto it =gotoIndexPatchList.begin(); it!=gotoIndexPatchList.end(); ++it){
-    if(gotoIndex.find(it->first)==gotoIndex.end()){
+  for (auto it : gotoIndexPatchList){
+    if(gotoIndex.find(it.first)==gotoIndex.end()){
         char *a;
-        strcpy(a, it->first.c_str());
+        strcpy(a, it.first.c_str());
         return a;
     }
     else {
-        backPatch(gotoIndexPatchList[it->first] , gotoIndex[it->first]);
+        backPatch(gotoIndexPatchList[it.first] , gotoIndex[it.first]);
     }
- }
+  }
     return NULL;
 }
 
@@ -218,32 +147,3 @@ void display3ac(){//name change merge
 	return;
   intermediateCodeFile.close();
 }
-
-
-// void display(quad q, int i){
-//       int k;
-
-// 	if(q.stmtNum==-1 || q.stmtNum == -4){
-// 		intermediateCodeFile << setw(5) << "[" << i << "]" << ": " << setw(15) << q.op.first << " " <<
-// 			setw(15) << q.id1.first << " " <<
-// 			setw(15) << q.id2.first << " " <<
-// 			setw(15) << q.res.first << '\n';
-// 	}
-//   else if(q.stmtNum==-2 || q.stmtNum == -3){
-// 		intermediateCodeFile  << endl << "[" << i << "]" << ": "<< q.op.first << endl << endl;
-// 	}
-
-// 	else{
-//       k = q.stmtNum;
-//       while(emittedCode[k].op.first == "GOTO" && emittedCode[k].id1.first == ""){
-//           k = emittedCode[k].stmtNum;
-//       } 
-      
-//       if(gotoLabels.find(k)== gotoLabels.end()) gotoLabels.insert(pair<int, string>(k, "Label"+to_string(k)));
-// 		intermediateCodeFile << setw(5) << "[" << i << "]" << ": " << setw(15) << q.op.first << " " <<
-// 			setw(15) << q.id1.first << " " <<
-// 			setw(15) << q.id2.first << " " <<
-// 			setw(15) << k << "---" << '\n';
-//       emittedCode[i].stmtNum = k;
-// 	}
-// }

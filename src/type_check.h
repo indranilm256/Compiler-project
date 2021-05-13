@@ -14,20 +14,18 @@ bool isSignedFloat (string type);
 class type_check
 {
     public:
-    static char* primaryExpr(char* identifier);
+    static char* primary(char* identifier);
     static char* constant(int nType);
-    static char* postfixExpr(string type, int prodNum);
-    static char* argumentExpr(string type1, string type2);
-    static char* unaryExpr(string op, string type);
-    static char* multiplicativeExpr(string type1, string type2, char op);
-    static char* additiveExpr(string type1, string type2, char op);
-    static char* shiftExpr(string type1,string type2);
-    static char* relationalExpr(string type1,string type2,char * op);
-    static char * equalityExpr(string type1,string type2);
-    static char * bitwiseExpr(string type1,string type2);
-    static char* conditionalExpr(string type1,string type2);
-    static char* validAssign(string type1,string type2);
-    static char* assignmentExpr(string type1,string type2,char* op);
-    static int typedecide(string type1, string type2);
-        
+    static char* postfix(string type, int prodNum);
+    static char* argument(string type1, string type2);
+    static char* unary(string op, string type);
+    static char* multiplicative(string type1, string type2, char op);
+    static char* additive(string type1, string type2, char op);
+    static char* shift(string type1,string type2);
+    static char* relational(string type1,string type2,char * op);
+    static char * equality(string type1,string type2);
+    static char * bitwise(string type1,string type2);
+    static char* conditional(string type1,string type2);
+    static char* valid_assignment(string type1,string type2);
+    static char* assignment(string type1,string type2,char* op);   
 };

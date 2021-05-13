@@ -54,10 +54,15 @@ void symbol_table:: stInitialize(){
     curr = &GST;
     is_next = 0;
     addKeywords();
-    funcArgumentMap.insert(pair<string,string>(string("printf"),string("char*,...")));
-    funcArgumentMap.insert(pair<string,string>(string("scanf"),string("char*,...")));
+    funcArgumentMap.insert(pair<string,string>(string("printf"),string("float")));
+    funcArgumentMap.insert(pair<string,string>(string("printn"),string("int")));
+    funcArgumentMap.insert(pair<string,string>(string("prints"),string("char*,...")));
+    funcArgumentMap.insert(pair<string,string>(string("scanf"),string("char*,float")));
+    funcArgumentMap.insert(pair<string,string>(string("scann"),string("char*,int")));
+    funcArgumentMap.insert(pair<string,string>(string("scans"),string("char*,...")));
     funcArgumentMap.insert(pair<string,string>(string("strlen"),string("void*")));
-
+    funcArgumentMap.insert(pair<string,string>(string("fread"),string("char*")));
+    funcArgumentMap.insert(pair<string,string>(string("fwrite"),string("char*,char*")));
 }
 void symbol_table:: paramTable(){   
       offsetNo++;
@@ -283,12 +288,14 @@ for(int i=0;i<50;i++){
 }
 
 //////////////// basic printf, scanf, strlen :: to get the code running /////////
-  insertSymbol(*curr,"printf","FUNC_void",8,0,1); //
-  insertSymbol(*curr,"scanf","FUNC_int",8,0,1);
-  insertSymbol(*curr,"prints","FUNC_void",8,0,1); //
+  insertSymbol(*curr,"printf","FUNC_void",8,0,1); // print_float
+  insertSymbol(*curr,"prints","FUNC_void",8,0,1); // print_string
+  insertSymbol(*curr,"printn","FUNC_void",8,0,1); // print_int
+  insertSymbol(*curr,"scanf","FUNC_int",8,0,1); // read_float
+  insertSymbol(*curr,"scann","FUNC_int",8,0,1); // read_int
+  insertSymbol(*curr,"scans","FUNC_int",8,0,1); // read_string
   insertSymbol(*curr,"strlen","FUNC_int",8,0,1); //
-  insertSymbol(*curr,"printn","FUNC_void",8,0,1); //
-  insertSymbol(*curr,"readFile","FUNC_int",8,0,1);
-  insertSymbol(*curr,"writeFile","FUNC_int",8,0,1);
+  insertSymbol(*curr,"fread","FUNC_int",8,0,1);
+  insertSymbol(*curr,"fwrite","FUNC_int",8,0,1);
 
 }

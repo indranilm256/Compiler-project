@@ -5,12 +5,12 @@ SRC=src
 BIN=bin
 OBJ=obj
 MYLIBRARY=$(CURDIR)
-
+CPPFLAG = -Wno-write-strings
 all: $(BIN)/parser
 
-$(BIN)/parser: $(OBJ)/parser.tab.c $(OBJ)/lex.yy.c  $(OBJ)/nodes.o $(OBJ)/symbol_table.o $(OBJ)/type_check.o $(OBJ)/3ac.o
+$(BIN)/parser: $(OBJ)/parser.tab.c $(OBJ)/lex.yy.c  $(OBJ)/nodes.o $(OBJ)/symbol_table.o $(OBJ)/type_check.o $(OBJ)/3ac.o  $(OBJ)/codegen.o 
 	@mkdir -p $(BIN)
-	$(CPP) -Wno-write-strings $^ -o $@ -I$(OBJ) -I$(SRC)
+	$(CPP) $(CPPFLAG) $^ -o $@ -I$(OBJ) -I$(SRC)
 
 $(OBJ)/lex.yy.c: $(SRC)/scanner.l 
 	@mkdir -p $(OBJ)

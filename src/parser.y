@@ -11,7 +11,8 @@ using namespace std;
 #define MAX_STR_LEN 1024
 
 #include "type_check.h"
-#include "nodes.h"
+//#include "nodes.h"
+#include "codeGen.h"
 extern FILE *yyin, *yyout; 
 int yylex(void);
 void yyerror(char *s,...);
@@ -80,7 +81,7 @@ primary_expression
 	: IDENTIFIER			{Node* n = new Node($1);
 							n->mkleaf();
 							$$ = n;
-							char* a = type_check::primaryExpr($1);
+							char* a = type_check::primary($1);
 				    		if(a){
 									string s = a;
                                     $$->is_init = symbol_table::lookup($1)->is_init;
@@ -139,20 +140,22 @@ postfix_expression
 												n->mknode((char*) NULL, $1, $3);
 												$$ = n;
 												if($1->is_init && $3->is_init){$$->is_init = 1;}
-												char* a = type_check::postfixExpr($1->node_type, 1);
+												char* a = type_check::postfix($1->node_type, 1);
+												int size = symbol_table:: getSize(a);
 												if(!isInt($3->node_type)){yyerror("Error: Array Index should be of type 'int' not '%s' ",$3->node_type.c_str());}
+												
 												if(a){
+													
 													string s = a;
 													$$->node_type = s;
 													//---------------3AC-------------------------------//
                                                  $$->place = getTmpSym($$->node_type);
                                                  //qid opT  = pair<string,sEntry*>("[]",NULL);
-                                                 // int k = emit(opT, $1->place, $3->place, $$->place, -1);
-                                                 $$->place.second->size = $3->place.second->offset;
+                                                 //int k = emit(opT, $1->place, $3->place, $$->place, -1);
+                                                 $$->place.second->size = size;
                                                  $$->place.second->offset = $1->place.second->offset;
                                                  $$->place.second->is_init = -5;
-
-                                                 $$->nextlist = {};
+                                                 $$->nextlist = {};//cout << 157 << endl;
                                                  //backPatch($3->truelist, k);
                                                  //backPatch($3->falselist, k);
                                                //----------------3AC------------------------------------//
@@ -162,7 +165,7 @@ postfix_expression
 																								}
 	| postfix_expression '(' ')'		{	$$ = $1;
 											$$->is_init = 1;
-											char* a = type_check::postfixExpr($1->node_type,2);
+											char* a = type_check::postfix($1->node_type,2);
 										 	if(a){
 												string s = a;
 												$$->node_type = s;
@@ -190,7 +193,7 @@ postfix_expression
 																n->mknode((char*) NULL, $1, $3);
 																$$ = n;
 																if($3->is_init) $$->is_init = 1;
-																char* a = type_check::postfixExpr($1->node_type, 3);
+																char* a = type_check::postfix($1->node_type, 3);
 																if(a){
 																	string s = a;
 																	$$->node_type = s;
@@ -215,7 +218,7 @@ postfix_expression
 																			if(f2 != -1) tmp2 = tmp2.substr(f2+1);
 																			if(B == "...") break;
 	
-																			b = type_check::validAssign(A,B);
+																			b = type_check::valid_assignment(A,B);
 																			if(b){
 																				if(!strcmp(b,"warning")){
 																					yyerror("Warning: Passing argument %d of \'%s\' from incompatible pointer type.\n Note : expected \'%s\' but argument is of type \'%s\'\n     \'%s %s %s \'",argnum,($1->node_key).c_str(),B.c_str(),A.c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());
@@ -268,7 +271,7 @@ postfix_expression
 											n->mknode($2,$1,(Node*)NULL);
 											$$ = n;
 											if($1->is_init) $$->is_init = 1;
-	  										char* a = type_check::postfixExpr($1->node_type, 6);
+	  										char* a = type_check::postfix($1->node_type, 6);
 											if(a){
 												string s = a; 
 												$$->node_type = s;
@@ -288,7 +291,7 @@ postfix_expression
 											n->mknode($2,$1,(Node*)NULL);
 											$$ = n;
 											if($1->is_init==1) $$->is_init =1;
-											char *a = type_check::postfixExpr($1->node_type, 7);
+											char *a = type_check::postfix($1->node_type, 7);
 											if(a){
 												string s = a;
 												$$->node_type = s;
@@ -319,7 +322,7 @@ argument_expression_list
 	| argument_expression_list ',' assignment_expression		{Node* n = new Node("assignment_expression_list");
 																n->mknode($2,$1,$3);
 																$$ = n;
-																char* a = type_check::argumentExpr($1->node_type, $3->node_type);
+																char* a = type_check::argument($1->node_type, $3->node_type);
 																string s = a;
 																$$->node_type = s;	
 																
@@ -340,7 +343,7 @@ unary_expression
 								n->mknode((char*) NULL, (Node*)NULL, $2);
 								$$ = n;
 								if($2->is_init) $$->is_init = 1;
-								char* a = type_check::postfixExpr($2->node_type, 6);
+								char* a = type_check::postfix($2->node_type, 6);
 								string s = a;
 								if(a){
 									$$->node_type = s;
@@ -358,7 +361,7 @@ unary_expression
 								n->mknode((char*) NULL, (Node*)NULL, $2);
 								$$ = n;
 								if($2->is_init) $$->is_init = 1;
-								char* a = type_check::postfixExpr($2->node_type, 6);
+								char* a = type_check::postfix($2->node_type, 6);
 								string s = a;
 								if(a){
 									$$->node_type = s;
@@ -374,7 +377,7 @@ unary_expression
 										n->mknode((char*)NULL, $1, $2);
 										$$ = n;
 										if($2->is_init) $$->is_init = 1;
-										char* a = type_check::unaryExpr($1->node_name, $2->node_type);
+										char* a = type_check::unary($1->node_name, $2->node_type);
 										string s = a;
 										if(a){
 											$$->node_type = s;
@@ -447,7 +450,7 @@ cast_expression
 multiplicative_expression
 	: cast_expression		{$$ = $1;}
 	| multiplicative_expression '*' cast_expression		{
-														char* a = type_check::multiplicativeExpr($1->node_type, $3->node_type, '*');
+														char* a = type_check::multiplicative($1->node_type, $3->node_type, '*');
 														if(a){
 																int k;
 																if(!strcmp(a,"int")){
@@ -500,7 +503,7 @@ multiplicative_expression
 														if($1->is_init && $3->is_init) $$->is_init = 1;
 														}
 	| multiplicative_expression '/' cast_expression		{
-														char* a = type_check::multiplicativeExpr($1->node_type, $3->node_type, '/');
+														char* a = type_check::multiplicative($1->node_type, $3->node_type, '/');
 														if(a){
 																int k;
 																if(!strcmp(a,"int")){
@@ -555,7 +558,7 @@ multiplicative_expression
 														n->mknode((char*)NULL,$1,$3);
 														$$ = n;
 														if($1->is_init && $3->is_init) $$->is_init = 1;
-														char* a = type_check::multiplicativeExpr($1->node_type, $3->node_type, '%');
+														char* a = type_check::multiplicative($1->node_type, $3->node_type, '%');
 														if(a){
 															$$->node_type = "long long";
 															//===========3AC======================//
@@ -575,7 +578,7 @@ multiplicative_expression
 additive_expression
 	: multiplicative_expression		{$$ = $1;}
 	| additive_expression '+' multiplicative_expression		{
-															char* a = type_check::additiveExpr($1->node_type,$3->node_type,'+');
+															char* a = type_check::additive($1->node_type,$3->node_type,'+');
 															char* q = new char();
 															string p;
 															if(a){
@@ -616,7 +619,7 @@ additive_expression
 															if($1->is_init && $3->is_init) $$->is_init = 1;
 															}			
 	| additive_expression '-' multiplicative_expression		{
-															char* a = type_check::additiveExpr($1->node_type,$3->node_type,'-');
+															char* a = type_check::additive($1->node_type,$3->node_type,'-');
 															char* q = new char();
 															string p;
 															if(a){string s = a;
@@ -662,7 +665,7 @@ shift_expression
 														Node* n = new Node($2);
 														n->mknode((char*)NULL,$1,$3);
 														$$ = n;
-                          								char* a = type_check::shiftExpr($1->node_type,$3->node_type);                        
+                          								char* a = type_check::shift($1->node_type,$3->node_type);                        
 														if(a){
 															$$->node_type = $1->node_type;
 															 //===========3AC======================//
@@ -677,7 +680,7 @@ shift_expression
 	| shift_expression RIGHT_OP additive_expression		{Node* n = new Node($2);
 														n->mknode((char*)NULL,$1,$3);
 														$$ = n;
-														char* a = type_check::shiftExpr($1->node_type,$3->node_type);                        
+														char* a = type_check::shift($1->node_type,$3->node_type);                        
 														if(a){
 															$$->node_type = $1->node_type;
 															//===========3AC======================//
@@ -697,7 +700,7 @@ relational_expression
 														n->mknode((char*)NULL,$1,$3);
 														$$ = n;
 														
-														char* a = type_check::relationalExpr($1->node_type,$3->node_type,"<");
+														char* a = type_check::relational($1->node_type,$3->node_type,"<");
                 										if(a){
 															if(!strcmp(a,"bool")) $$->node_type = string("bool");
                     										else if(!strcmp(a,"Bool")){
@@ -720,7 +723,7 @@ relational_expression
 			Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-			char* a = type_check::relationalExpr($1->node_type,$3->node_type,">");                 
+			char* a = type_check::relational($1->node_type,$3->node_type,">");                 
 			if(a){ 
 				if(!strcmp(a,"bool")) $$->node_type = string("bool");
 				else if(!strcmp(a,"Bool")){
@@ -744,7 +747,7 @@ relational_expression
             Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-            char* a = type_check::relationalExpr($1->node_type,$3->node_type,"<=");               
+            char* a = type_check::relational($1->node_type,$3->node_type,"<=");               
 			if(a){
 				if(!strcmp(a,"bool")) $$->node_type = string("bool");
                 else if(!strcmp(a,"Bool")){
@@ -766,7 +769,7 @@ relational_expression
 			Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-			char* a = type_check::relationalExpr($1->node_type,$3->node_type,">=");            
+			char* a = type_check::relational($1->node_type,$3->node_type,">=");            
 			if(a){  
 				if(!strcmp(a,"bool")) $$->node_type = string("bool");
 				else if(!strcmp(a,"Bool")){
@@ -794,7 +797,7 @@ equality_expression
 			Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-            char* a = type_check::equalityExpr($1->node_type,$3->node_type);
+            char* a = type_check::equality($1->node_type,$3->node_type);
             if(a){ 
 				if(!strcmp(a,"true")){
                 	yyerror("Warning: Comparision between pointer and Integer");
@@ -815,7 +818,7 @@ equality_expression
 			Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-			char* a = type_check::equalityExpr($1->node_type,$3->node_type);
+			char* a = type_check::equality($1->node_type,$3->node_type);
 			if(a){   
 				if(!strcmp(a,"true")){
 					yyerror("Warning: Comparision between pointer and Integer");
@@ -840,7 +843,7 @@ and_expression
         Node* n = new Node($2);
 		n->mknode((char*)NULL,$1,$3);
 		$$ = n;
-        char* a = type_check::conditionalExpr($1->node_type,$3->node_type);
+        char* a = type_check::conditional($1->node_type,$3->node_type);
         if(a){
             if(!strcmp(a,"true")) { $$->node_type = string("bool"); }
             else{   $$->node_type = string("long long");}
@@ -865,7 +868,7 @@ exclusive_or_expression
         Node* n = new Node($2);
 		n->mknode((char*)NULL,$1,$3);
 		$$ = n;
-        char* a = type_check::bitwiseExpr($1->node_type,$3->node_type);
+        char* a = type_check::bitwise($1->node_type,$3->node_type);
         if(a){
             if(!strcmp(a,"true")) { $$->node_type = string("bool"); }
             else{   $$->node_type = string("long long");}
@@ -890,7 +893,7 @@ inclusive_or_expression
             Node* n = new Node($2);
 			n->mknode((char*)NULL,$1,$3);
 			$$ = n;
-            char* c = type_check::bitwiseExpr($1->node_type,$3->node_type);
+            char* c = type_check::bitwise($1->node_type,$3->node_type);
             if(c){
                 if(!strcmp(c,"true")) { $$->node_type = string("bool"); }
                 else{   $$->node_type = string("long long");}
@@ -1000,7 +1003,7 @@ conditional_expression
 		Node* n = new Node("?");
 		n->mknode((char*)NULL,$3,$6);
 		$$ = n;
-		char* c = type_check::conditionalExpr($3->node_type,$6->node_type);
+		char* c = type_check::conditional($3->node_type,$6->node_type);
 		if(c){
 			string str = c;
 			$$->node_type = str;
@@ -1020,14 +1023,11 @@ assignment_expression
 		Node* n = new Node($2);
 		n->mknode((char*)NULL,$1,$3);
 		$$ = n;
-    	char* c = type_check::assignmentExpr($1->node_type,$3->node_type,$2);
-	
+    	char* c = type_check::assignment($1->node_type,$3->node_type,$2);
         if(c){
-
             if(!strcmp(c,"true")){ $$->node_type = $1->node_type; }
 			if(!strcmp(c,"Warning")){
-			
-				 yyerror("Warning: Incompatible types when assigning type \'%s\' to \'%s\' ",($3->node_type).c_str(),($1->node_type).c_str());
+				yyerror("Warning: Incompatible types when assigning type \'%s\' to \'%s\' ",($3->node_type).c_str(),($1->node_type).c_str());
 			}
             if(!strcmp(c,"warning")){ 
 				$$->node_type = $1->node_type;
@@ -1035,17 +1035,16 @@ assignment_expression
             }
 			//-------------3AC------------------------------------//
                       int k;
-		     if(!strcmp($2,"=") || !strcmp($2,"+=") || !strcmp($2,"-=") || !strcmp($2,"*=") || !strcmp($2,"/=")) k= assignmentExpression($2, $$->node_type,$1->node_type, $3->node_type, $1->place, $3->place)	;
+					  
+		     if(!strcmp($2,"=") || !strcmp($2,"+=") || !strcmp($2,"-=") || !strcmp($2,"*=") || !strcmp($2,"/=")) k= assignment1($2, $$->node_type,$1->node_type, $3->node_type, $1->place, $3->place)	;
 		     else assignment2($2, $$->node_type,$1->node_type, $3->node_type, $1->place, $3->place);
                        $$->place = $1->place;
-
-                      backPatch($3->nextlist, k);
-                       
-                      
+                      backPatch($3->nextlist, k);       
+					  
             //-------------------------------------------------------//
         }
         else{ yyerror("Error: Incompatible types when assigning type \'%s\' to \'%s\' ",($1->node_type).c_str(),($3->node_type).c_str()); }
-     	if($1->expr_type==3 && $3->is_init==1){ 
+		if($1->expr_type==3 && $3->is_init==1){ 
 			symbol_table::update_isInit($1->node_key);
 		} 
     }
@@ -1677,7 +1676,7 @@ initializer_list
 			n->mknode((char*) NULL, $1 ,$4);    
 			$$ = n;      
 			$$->node_type = $1->node_type;
-           	char* a = type_check::validAssign($1->node_type,$4->node_type);
+           	char* a = type_check::valid_assignment($1->node_type,$4->node_type);
                if(a){
                     if(!strcmp(a,"true")){ ; }
                     if(!strcmp(a,"warning")){ ;
@@ -1712,10 +1711,10 @@ labeled_statement
 								n->mknode((char*) NULL, l1, $4);
 								$$ = n;
 									//===========3AC======================//
-
-									if(!gotoIndexStorage($1, $3)){
+									if(gotoIndex.find($1) == gotoIndex.end()){
+										gotoIndex.insert(pair<string, int>($1, $3));
+									}else{
 										yyerror("ERROR:\'%s\' is already defined", $1);
-
 									} 
 									 $$->nextlist = $4->nextlist;
 									$$->caselist = $4->caselist;
@@ -1848,7 +1847,9 @@ selection_statement
 											n->mknode((Node*) NULL, $3, $5,(Node*) NULL,(Node*) NULL);
 											$$ = n;
 											//--------------3AC---------------------------//
-                                              setListId1($5->caselist, $3->place);
+											  for(auto i :$5->caselist){
+												emittedCode[i].id1 = $3->place;
+											  }
                                               $5->nextlist.merge($5->breaklist);
                                               $$->nextlist= $5->nextlist;
                                               $$->continuelist= $5->continuelist;
@@ -1926,7 +1927,7 @@ jump_statement
 		$$ = n;
 								//-----------3AC---------------------//
                                  int k = emit(pair<string, sEntry*>("GOTO", symbol_table::lookup("goto")),pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL), pair<string, sEntry*>("", NULL ),0);
-                                 gotoIndexPatchListStorage($2, k);
+                                 gotoIndexPatchList[$2].push_back(k);
                                 //-----------------------------------//
 	}
 	| CONTINUE ';' 	{ 	Node* n = new Node("continue");
@@ -2063,7 +2064,7 @@ GOTO_emit
 
 M
 	: %empty {
-			$$ = getNextIndex();
+			$$ = emittedCode.size();
 	}
 	;
 
@@ -2194,10 +2195,12 @@ int  main(int argc,char **argv){
 		yyparse();
 		if(k==0) graphEnd();
 		display3ac();
+		resetRegister();
+  		generateCode();
+  		printCode();
 		symFileName = "GST.csv";
 		symbol_table::printSymTables(curr,symFileName);
 		symbol_table::printFuncArguments();
-		
 	}
 	return 0;
 }

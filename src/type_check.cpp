@@ -1,99 +1,6 @@
 #include "type_check.h"
 #include "symbol_table.h"
 
-char* type_check::primaryExpr(char *identifier)
-{
-    sEntry *n = symbol_table::lookup(identifier);
-    if (n)
-    {
-        char *s = new char();
-        strcpy(s, (n->type).c_str());
-        return s;
-    }
-    return NULL;
-}
-
-char* type_check::constant(int nType)
-{
-    if (nType == 1)
-        return "int";
-    if (nType == 2)
-        return "long";
-    if (nType == 3)
-        return "long long";
-    if (nType == 4)
-        return "float";
-    if (nType == 5)
-        return "double";
-    if (nType == 6)
-        return "long double";
-    return "default";
-}
-
-char* type_check::postfixExpr(string type, int prodNum)
-{
-    char *newtype = new char();
-    strcpy(newtype, type.c_str());
-    if (prodNum == 1)
-    { // postfix_expression '[' expression ']'
-        if (type[type.size() - 1] == '*')
-        {
-            newtype[type.size() - 1] = '\0';
-            return newtype;
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-    if (prodNum == 2 || prodNum == 3)
-    { // postfix_expression '(' argument_expression_list ')'
-        string tmp = type.substr(0, 5);
-        if (tmp == string("FUNC_"))
-        {
-            newtype += 5;
-            return newtype;
-        }
-        else
-            return NULL;
-    }
-    if (prodNum == 6 || prodNum == 7)
-    { // postfix_expression INC_OP/DEC_OP
-        if (isInt(type))
-        {
-            return newtype;
-        }
-        else
-            return NULL;
-    }
-    if (prodNum == 8 || prodNum == 9)
-    { //'(' type_name ')' '{' initializer_list ',' '}'
-        return newtype;
-    }
-}
-
-char* type_check::argumentExpr(string type1, string type2)
-{
-    char *a = new char();
-    a = "void";
-    /*  if(prodNum==1){ //assignment_expression
-	if(type1==string("void"))//good string
-	     return a;
-	else {
-	    a = "error";
-	    return a;
-	}	
-    }*/
-    //argument_expression_list ',' assignment_expression"
-    if (type1 == string("void") && type2 == string("void"))
-        return a;
-    else
-    {
-        a = "error";
-        return a;
-    }
-}
-
 bool isInt(string type)
 {
     if (type == string("int") || type == string("long") || type == string("long long") || type == string("long int") || type == string("long long int") ||
@@ -135,7 +42,97 @@ bool isSignedFloat(string type)
     return false;
 }
 
-char* type_check :: unaryExpr(string op, string type)
+char* type_check::primary(char *identifier)
+{
+    sEntry *n = symbol_table::lookup(identifier);
+    if (n)
+    {
+        char *s = new char();
+        strcpy(s, (n->type).c_str());
+        return s;
+    }
+    return NULL;
+}
+
+char* type_check::constant(int nType)
+{
+    switch (nType)
+    {
+    case 1:
+        return "int";
+    case 2:
+        return "long";
+    case 3:
+        return "long long";
+    case 4:
+        return "float";
+    case 5:
+        return "double";
+    case 6:
+        return "long double";
+    default:
+        break;
+    }
+    return "default";
+}
+
+char* type_check::postfix(string type, int prodNum)
+{
+    char *newtype = new char();
+    strcpy(newtype, type.c_str());
+    if (prodNum == 1)
+    { // postfix_expression '[' expression ']'
+        if (type[type.size() - 1] == '*')
+        {
+            newtype[type.size() - 1] = '\0';
+            return newtype;
+        }
+        else
+        {
+            return NULL;
+        }
+    }
+    if (prodNum == 2 || prodNum == 3)
+    { // postfix_expression '(' argument_expression_list ')'
+        string tmp = type.substr(0, 5);
+        if (tmp == string("FUNC_"))
+        {
+            newtype += 5;
+            return newtype;
+        }
+        else
+            return NULL;
+    }
+    if (prodNum == 6 || prodNum == 7)
+    { // postfix_expression INC_OP/DEC_OP
+        if (isInt(type))
+        {
+            return newtype;
+        }
+        else
+            return NULL;
+    }
+    if (prodNum == 8 || prodNum == 9)
+    { //'(' type_name ')' '{' initializer_list ',' '}'
+        return newtype;
+    }
+}
+
+char* type_check::argument(string type1, string type2)
+{
+    char *a = new char();
+    a = "void";
+    //argument_expression_list ',' assignment_expression"
+    if (type1 == string("void") && type2 == string("void"))
+        return a;
+    else
+    {
+        a = "error";
+        return a;
+    }
+}
+
+char* type_check :: unary(string op, string type)
 {
 
     //printf("in unaryExpr function\n");
@@ -147,7 +144,7 @@ char* type_check :: unaryExpr(string op, string type)
     }
     if (op == string("*"))
     { //*x return x type pointer* -> pointer
-        return type_check::postfixExpr(type, 1);
+        return type_check::postfix(type, 1);
     }
     if (op == string("+") || op == string("-"))
     { //
@@ -170,7 +167,7 @@ char* type_check :: unaryExpr(string op, string type)
     return a;
 }
 
-char* type_check :: multiplicativeExpr(string type1, string type2, char op)
+char* type_check :: multiplicative(string type1, string type2, char op)
 { // multiplicative_expression '*' cast_expression   | multiplicative_expression '/' cast_expression  |  multiplicative_expression '%' flag_expression
     char *a = new char();
     if ((isInt(type1) || isFloat(type1)) && (isInt(type2) || isFloat(type2)))
@@ -201,7 +198,7 @@ char* type_check :: multiplicativeExpr(string type1, string type2, char op)
     return NULL;
 }
 
-char* type_check ::additiveExpr(string type1, string type2, char op)
+char* type_check ::additive(string type1, string type2, char op)
 { // additive_expression '+' multiplicative_expression  | additive_expression '-' multiplicative_expression
     char *a = new char();
     if ((isInt(type1) || isFloat(type1)) && (isInt(type2) || isFloat(type2)))
@@ -214,17 +211,6 @@ char* type_check ::additiveExpr(string type1, string type2, char op)
         {
             a = "float";
         }
-        return a;
-    }
-
-    if (type1 == string("_Complex") || type2 == string("_Complex"))
-    {
-        a = "_Complex";
-        return a;
-    }
-    else if (type1 == string("_Imaginary") && type2 == string("_Imaginary"))
-    {
-        a = "_Imaginary";
         return a;
     }
     else if (type1 == string("char") && isInt(type2) || (type2 == string("char") && isInt(type1)))
@@ -240,7 +226,7 @@ char* type_check ::additiveExpr(string type1, string type2, char op)
     return NULL;
 }
 
-char* type_check ::shiftExpr(string type1, string type2) //shift_expression LEFT_OP|RIGHT_OP additive_expression 
+char* type_check ::shift(string type1, string type2) //shift_expression LEFT_OP|RIGHT_OP additive_expression 
 {
     char *a = new char();
     a = "True";
@@ -249,7 +235,7 @@ char* type_check ::shiftExpr(string type1, string type2) //shift_expression LEFT
     else
         return NULL;
 }
-char* type_check ::relationalExpr(string type1, string type2, char *op) //relational_expression '<'|'>'|LE|GE shift_expression
+char* type_check ::relational(string type1, string type2, char *op) //relational_expression '<'|'>'|LE|GE shift_expression
 {
     char *a = new char();
     if (isInt(type1) || isFloat(type1) || type1 == string("char"))
@@ -282,7 +268,7 @@ char* type_check ::relationalExpr(string type1, string type2, char *op) //relati
     }
     return NULL;
 }
-char* type_check ::equalityExpr(string type1, string type2) //equality_expression EQ_OP|NE_OP relational_expression
+char* type_check ::equality(string type1, string type2) //equality_expression EQ_OP|NE_OP relational_expression
 {
     char *a = new char();
     if (isInt(type1) || isFloat(type1) || (type1 == "char"))
@@ -306,7 +292,7 @@ char* type_check ::equalityExpr(string type1, string type2) //equality_expressio
     return NULL;
 }
 
-char* type_check ::bitwiseExpr(string type1, string type2) //and_expression '&'| '^' | '|' equality_expression | 
+char* type_check ::bitwise(string type1, string type2) //and_expression '&'| '^' | '|' equality_expression | 
 { // ^,&,|
     char *a = new char();
     if ((type1 == string("bool")) && (type2 == string("bool")))
@@ -322,24 +308,20 @@ char* type_check ::bitwiseExpr(string type1, string type2) //and_expression '&'|
     return NULL;
 }
 
-char* type_check :: conditionalExpr(string type1, string type2)//logical_or ?  expression ':' \epsilon  conditional_expression  $3, $6
-{ // ???????????????????
+char* type_check :: conditional(string type1, string type2)//logical_or ?  expression ':' \epsilon  conditional_expression  $3, $6
+{ 
     char *a = new char();
-    // if (type1 == string("char"))
-    //     type1 = string("long long");
-    // if (isInt(type1))
-    //     type1 = string("long double");
-    // if (type2 == string("char"))
-    //     type2 = string("long long");
-    // if (isInt(type2))
-    //     type2 = string("long double");
-    
-    if (isFloat(type1) && isFloat(type2))
+    if (isInt(type1) && isInt(type2))
+    {
+        a = "long long";
+        return a;
+    }
+    else if (isFloat(type1) && isFloat(type2))
     {
         a = "long double";
         return a;
     }
-    if (type1 == type2)
+    else if (type1 == type2)
     {
         strcpy(a, type1.c_str());
         return a;
@@ -353,29 +335,29 @@ char* type_check :: conditionalExpr(string type1, string type2)//logical_or ?  e
     return NULL;
 }
 
-char* type_check ::validAssign(string type1, string type2) //postfix_expression '(' argument_expression_list ')' | designation M initializer | initializer_list ',' M designation initializer | initializer_list ',' M  initializer 
+char* type_check ::valid_assignment(string type1, string type2) //postfix_expression '(' argument_expression_list ')' | designation M initializer | initializer_list ',' M designation initializer | initializer_list ',' M  initializer 
 {
     char *a = new char();
-    if(type1 == type2){return "true";;}
-    if(type2 == "char" && isInt(type1)){return "true";;}
+    if(type1 == type2){return "true";}
+    if(type2 == "char" && isInt(type1)){return "true";}
     else if(type2 == "int" && (type1 != "char")){
          a = "Warning";
-        return a;;
+        return a;
     }else  if(type2 == "long" && (type1 != "int" && type1 != "char")){
          a = "Warning";
-        return a;;
+        return a;
     }else  if(type2 == "long long" && (type1 != "int" && type1 != "char" && type1 != "long")){
          a = "Warning";
-        return a;;
+        return a;
     }else  if(type2 == "float" && (type1 != "int" && type1 != "char" && type1 != "long" && type1 != "long long")){
          a = "Warning";
-        return a;;
+        return a;
     }else  if(type2 == "double" && (type1 != "int" && type1 != "char" && type1 != "long" && type1 != "long long" && type1 != "float")){
          a = "Warning";
-        return a;;
+        return a;
     }else  if(type2 == "long double" && (type1 != "int" && type1 != "char" && type1 != "long" && type1 != "long long" && type1 != "float" && type1 != "double")){
          a = "Warning";
-        return a;;
+        return a;
     }
     else if (isInt(type2) && (type1[type1.size() - 1] == '*')){
         a = "warning";
@@ -383,16 +365,11 @@ char* type_check ::validAssign(string type1, string type2) //postfix_expression 
     }
     else if (isInt(type1) && (type2[type2.size() - 1] == '*'))
     {
-        // cout << "367" << endl;
         a = "warning";
         return a;
     }
-
-    else if(isFloat(type2) && type1==string("char"))return NULL;
-    else if(isFloat(type1) && type2==string("char"))return NULL;
     else if((isInt(type1)||type1==string("char"))&&(isFloat(type2) ||isInt(type2)))
     {
-
         a = "true";
         return a;
     }
@@ -423,13 +400,14 @@ char* type_check ::validAssign(string type1, string type2) //postfix_expression 
     return NULL;
 }
 
-char* type_check ::assignmentExpr(string type1, string type2, char *op) // assignment expression valid or not
+char* type_check ::assignment(string type1, string type2, char *op) // assignment expression valid or not
 {
    
     char *a = new char();
     if (!strcmp(op, "=")) // op = '='
     {
-        a = type_check::validAssign(type1, type2);
+        if(type1 == " "){return NULL;}
+        a = type_check::valid_assignment(type1, type2);
         if (a)
             return a;
         else
@@ -437,7 +415,7 @@ char* type_check ::assignmentExpr(string type1, string type2, char *op) // assig
     }
     else if ((!strcmp(op, "*=")) || (!strcmp(op, "/=")) || (!strcmp(op, "%=")))
     {
-        a = type_check::multiplicativeExpr(type1, type2, op[0]);
+        a = type_check::multiplicative(type1, type2, op[0]);
         if (a)
         {
             a = "true";
@@ -446,7 +424,7 @@ char* type_check ::assignmentExpr(string type1, string type2, char *op) // assig
     }
     else if ((!strcmp(op, "+=")) || (!strcmp(op, "-=")))
     {
-        a = type_check::additiveExpr(type1, type2, op[0]);
+        a = type_check::additive(type1, type2, op[0]);
         if (a)
         {
             a = "true";
@@ -455,7 +433,7 @@ char* type_check ::assignmentExpr(string type1, string type2, char *op) // assig
     }
     else if ((!strcmp(op, ">>=")) || (!strcmp(op, "<<=")))
     {
-        a = type_check::shiftExpr(type1, type2);
+        a = type_check::shift(type1, type2);
         if (a)
         {
             a = "true";
@@ -464,7 +442,7 @@ char* type_check ::assignmentExpr(string type1, string type2, char *op) // assig
     }
     else if ((!strcmp(op, "&=")) || (!strcmp(op, "^=")) || (!strcmp(op, "|=")))
     {
-        a = type_check::bitwiseExpr(type1, type2);
+        a = type_check::bitwise(type1, type2);
         if (a)
         {
             a = "true";
