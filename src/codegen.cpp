@@ -1,106 +1,99 @@
 #include "codegen.h"
 
-int counter;
-int dataCounter;
-string reg1, reg2, reg3;
-
-
-
-int regCount = 1;
-map <string, vector<string>> code; ///runtime stack
-vector<string> dataSection; // activation record
-queue <pair<string, sEntry*>>  regInUse;
-queue <pair<string, sEntry*> > freeReg;
+int argcount;
+int datanum;
+string r1, r2, r3;
+int regcount = 1;
+map <string, vector<string>> code; 
+vector<string> data_segment; 
+queue <pair<string, sEntry*>>  used_reg;
+queue <pair<string, sEntry*>>  free_reg;
 map <string, string> reg;
 
-string currFunction;
-ofstream codeFile;
+string curr_func;
+ofstream asm_file;
 
-void addLine(string a){
-  code[currFunction].push_back(a);
+void putln(string a){
+  code[curr_func].push_back(a);
 }
 
-void addData(string a){
-  dataSection.push_back(a);
+void putdata(string a){
+  data_segment.push_back(a);
 }
 
-void printCode(){
-  codeFile.open("code.asm");
-  for(int m=0;m<dataSection.size();m++){
-    codeFile << dataSection[m]<<endl;
+void print_code(){
+  asm_file.open("code.asm");
+  for(int m=0;m<data_segment.size();m++){
+    asm_file << data_segment[m]<<endl;
   }
-  codeFile<<endl;
-  codeFile<<".text"<<endl;
-  codeFile << "main:" << endl;
+  asm_file<<endl;
+  asm_file<<".text"<<endl;
+  asm_file << "main:" << endl;
   for(int i = 0; i<code["main"].size(); ++i){
-    codeFile << '\t' << code["main"][i]<< endl;
+    asm_file << '\t' << code["main"][i]<< endl;
   }
-  codeFile << endl;
-  std::map<string , std::vector<string>>::iterator it;
+  asm_file << endl;
+  map<string , std::vector<string>>::iterator it;
   it = code.find("main");
   code.erase(it);
   for(auto it = code.begin(); it!=code.end(); ++it){
-    codeFile << it->first << ":" << endl;
+    asm_file << it->first << ":" << endl;
     for(int i = 0; i<code[it->first].size(); ++i){
-      codeFile << '\t' << code[it->first][i]<< endl;
+      asm_file << '\t' << code[it->first][i]<< endl;
     }
-    codeFile << endl;
+    asm_file << endl;
   }
 }
 
 
-void generateCode() {
-  dataCounter = 0;
-  addData(".data");
-  addData("reservedspace: .space 1024");
-  addData("stringspace: .space 1024");
-  addData("_newline: .asciiz \"\\n\"");
-  currFunction = "main";
-  addLine("");
-  //    cout << "Inside generateCode" << endl;
-  int unconditionalgoto = 0;
-  for (int i = 0; i < emittedCode.size(); ++i) {
-    addLine("# " + to_string(i + 1) + " : " + emittedCode[i].res.first + " = " + emittedCode[i].id1.first + " " + emittedCode[i].op.first + " " +emittedCode[i].id2.first);
-    if(emittedCode[i].op.first=="GOTO") unconditionalgoto = 0;//if else not for loop
-    if (gotoLabels.find(i) != gotoLabels.end()) {
-      saveOnJump();
-      addLine(gotoLabels[i] + ":");
-      if(unconditionalgoto == 1) unconditionalgoto = 0;
+void code_generator() {
+  datanum = 0;
+  putdata(".data");
+  putdata("reservedspace: .space 1024");
+  putdata("stringspace: .space 1024");
+  putdata("_newline: .asciiz \"\\n\"");
+  curr_func = "main";
+  putln("");
+  int goto_jump = 0;//0 impilies jumping to labelled statement on goto else execute next statement
+  for (int i = 0; i < IRcode.size(); ++i) {
+    putln("# " + to_string(i + 1) + " : " + IRcode[i].res.first + " = " + IRcode[i].id1.first + " " + IRcode[i].op.first + " " +IRcode[i].id2.first);
+    if(IRcode[i].op.first=="GOTO") goto_jump = 0;
+    if (Goto_labels.find(i) != Goto_labels.end()) {
+      save_reg();
+      putln(Goto_labels[i] + ":");
+      if(goto_jump == 1) goto_jump = 0;
     }
-    if(unconditionalgoto) continue;
-    if (emittedCode[i].stmtNum == -2) {
-      // this is a function
-      // cout << "Inside generateCode function" << endl;
-
-      counter = 0;
-      currFunction = emittedCode[i].op.first;
-      currFunction.erase(currFunction.begin(), currFunction.begin() + 5);
-      currFunction.erase(currFunction.end() - 7, currFunction.end());
-      if (currFunction == "main") {
+    if(goto_jump) continue;
+    if (IRcode[i].stmtCounter == -2) {
+      argcount = 0;
+      curr_func = IRcode[i].op.first;
+      curr_func.erase(curr_func.begin(), curr_func.begin() + 5);
+      curr_func.erase(curr_func.end() - 7, curr_func.end());
+      if (curr_func == "main") {
 
         // set the frame pointer of the callee
-        addLine("sub $sp, $sp, 200");
-        addLine("la $fp, ($sp)");
+        putln("sub $sp, $sp, 200");
+        putln("la $fp, ($sp)");
         int size = symbol_table::lookup("main")->size;
-        // allocate space for the registers by updating the stack pointer
-        addLine("sub $sp, $sp, " + to_string(size));
+        // update the stack pointer to allocate space for the registers  
+        putln("sub $sp, $sp, " + to_string(size));
       } else {
-        // currFunction = currFunction + to_string(i);
-        int size = symbol_table::lookup(currFunction)->size + 4;//eax storage
+    
+        int size = symbol_table::lookup(curr_func)->size + 4;//eax storage
 
-        // allocate space for the registers by updating the stack pointer
-        addLine("sub $sp, $sp, 72");//18 main register
+        
+        putln("sub $sp, $sp, 72");//18 main register
         call_seq_asm_code();
         // create space for local data
-        addLine("li $v0, " + to_string(size));
-        addLine("sub $sp, $sp, $v0");
+        putln("li $v0, " + to_string(size));
+        putln("sub $sp, $sp, $v0");// update the stack pointer to allocate space for the registers 
 
-        // copy the parameters
-        string parameterList = symbol_table::funcArgList(currFunction);
-        int paramNum = 0;
-        int paramSize = 76;
-        string temp = parameterList;
-        if (parameterList != "") {
+        
+        string param_list = symbol_table::funcArgList(curr_func);
+        int param_num = 0;
+        int param_size = 76;
+        string temp = param_list;
+        if (param_list != "") {
           string delim = string(",");
           string temp1;
           int f1 = temp.find_first_of(delim);
@@ -108,412 +101,552 @@ void generateCode() {
             temp1 = temp.substr(0, f1);
             temp = temp.substr(f1 + 1);
             f1 = temp.find_first_of(delim);
-            if(paramNum<4){
-              addLine("li $s6, " + to_string(paramSize));
-              addLine("sub $s7, $fp, $s6");
-              addLine("sw $a" + to_string(paramNum) + ", 0($s7)");
+            if(param_num<4){
+              putln("li $s6, " + to_string(param_size));
+              putln("sub $s7, $fp, $s6");
+              putln("sw $a" + to_string(param_num) + ", 0($s7)");
             }
             char a[50];
             strcpy(a, temp1.c_str());
-            paramSize += symbol_table::getSize(a);
-            paramNum++;
+            param_size += symbol_table::getSize(a);
+            param_num++;
           }
-          if(paramNum<4){
-            addLine("li $s6, " + to_string(paramSize));
-            addLine("sub $s7, $fp, $s6");
-            addLine("sw $a" + to_string(paramNum) + ", 0($s7)");
+          if(param_num<4){
+            putln("li $s6, " + to_string(param_size));
+            putln("sub $s7, $fp, $s6");
+            putln("sw $a" + to_string(param_num) + ", 0($s7)");
           }
         }
       }
-    } else if (emittedCode[i].stmtNum == -4) { // this stmtNum is specially set
+    } else if (IRcode[i].stmtCounter == -4) { // this stmtCounter is specially set
                                                // for param with constant string
-      addData("DataString" + to_string(dataCounter) + ": .asciiz " +
-              emittedCode[i].id1.first);
-      addLine("la $a" + to_string(counter) + ", DataString" +
-              to_string(dataCounter));
-      counter++;
-      dataCounter++;
+      putdata("DataString" + to_string(datanum) + ": .asciiz " +
+              IRcode[i].id1.first);
+      putln("la $a" + to_string(argcount) + ", DataString" +
+              to_string(datanum));
+      argcount++;
+      datanum++;
     }
 
-    else if (emittedCode[i].stmtNum == -1) {
+    else if (IRcode[i].stmtCounter == -1) {
       // for parameters of the functional call
 
-      if (emittedCode[i].op.first == "param") {
-        if (emittedCode[i].id1.second != NULL) {
-          if (emittedCode[i].id1.second->is_init == -5) {//postfix_expression '[' expression ']'	
-            addLine("li $s6, "+to_string(emittedCode[i].id1.second->size) );
-            addLine("sub $s7, $fp, $s6");
-            addLine("lw $t8, 0($s7)");
-            addLine("li $t9, 4");
-            addLine("mult $t8, $t9");
-            addLine("mflo $t9");
-            addLine("li $s6, " +to_string(emittedCode[i].id1.second->offset)); // put the offset in s6
-            addLine("add $s6, $s6, $t9");
-            addLine("sub $s7, $fp, $s6"); // combine the two components of the
+      if (IRcode[i].op.first == "param") {
+        if (IRcode[i].id1.second != NULL) {
+          if (IRcode[i].id1.second->is_init == -5) {//postfix_expression '[' expression ']'	
+            putln("li $s6, "+to_string(IRcode[i].id1.second->size) );
+            putln("sub $s7, $fp, $s6");
+            putln("lw $t8, 0($s7)");
+            putln("li $t9, 4");
+            putln("mult $t8, $t9");
+            putln("mflo $t9");
+            putln("li $s6, " +to_string(IRcode[i].id1.second->offset)); // put the offset in s6
+            putln("add $s6, $s6, $t9");
+            putln("sub $s7, $fp, $s6"); // combine the two components of the
                                           // address
-            addLine("lw $t6, 0($s7)");
-            reg1 = "$t6";
+            putln("lw $t6, 0($s7)");
+            r1 = "$t6";
           }
-          else reg1 = getNextReg(emittedCode[i].id1);
-          
-          // if(emittedCode[i].id1.second->is_init == -5) reg1 = "$t6";
-          // else reg1 = getNextReg(emittedCode[i].id1);
-          if(counter < 4){
-            addLine("move $a" + to_string(counter) + ", " + reg1);
+          else r1 = get_reg(IRcode[i].id1);
+          if(argcount < 4){
+            putln("move $a" + to_string(argcount) + ", " + r1);
           }
           else{
-            int paramNum = 0;
-            int paramSize = 76;
+            int param_num = 0;
+            int param_size = 76;
             char *a = "int";//32 bit isliye
-            paramSize += counter* symbol_table::getSize(a);
+            param_size += argcount* symbol_table::getSize(a);
 
-            addLine("li $s6, " + to_string(paramSize));
-            addLine("sub $s7, $sp, $s6");
-            addLine("sw "+reg1+", 0($s7)");
+            putln("li $s6, " + to_string(param_size));
+            putln("sub $s7, $sp, $s6");
+            putln("sw "+r1+", 0($s7)");
           }
-          counter++;
+          argcount++;
         } else {// symbol table entry not find
-          if(counter < 4){
-            addLine("addi $a" + to_string(counter) + ",$0, " +
-                    emittedCode[i].id1.first);
+          if(argcount < 4){
+            putln("addi $a" + to_string(argcount) + ",$0, " +
+                    IRcode[i].id1.first);
           }
           else{
-            int paramNum = 0;
-            int paramSize = 76;
+            int param_num = 0;
+            int param_size = 76;
             char *a = "int";
-            paramSize += counter* symbol_table::getSize(a);
-            addLine("addi $t9, $0, " +   emittedCode[i].id1.first);
-            addLine("li $s6, " + to_string(paramSize));
-            addLine("sub $s7, $sp, $s6");
-            addLine("sw $t9, 0($s7)");
+            param_size += argcount* symbol_table::getSize(a);
+            putln("addi $t9, $0, " +   IRcode[i].id1.first);
+            putln("li $s6, " + to_string(param_size));
+            putln("sub $s7, $sp, $s6");
+            putln("sw $t9, 0($s7)");
         }
-          counter++;//last mei
+          argcount++;
         }
       }
 
-      // for assignment operators
-      else if (emittedCode[i].op.first == "=" || emittedCode[i].op.first == "realtoint" || emittedCode[i].op.first == "inttoreal") {
-        if (emittedCode[i].res.second == NULL)
-          cout << "no sentry" << endl;
-
-        if (emittedCode[i].res.second->is_init == -5)//postfix_expression '[' expression ']'
-          reg3 = string("$t7");//why t7
+      // -------------------for assignment operators-------------------
+      else if (IRcode[i].op.first == "=" || IRcode[i].op.first == "realtoint" || IRcode[i].op.first == "inttoreal") {
+        if (IRcode[i].res.second == NULL)
+        if (IRcode[i].res.second->is_init == -5)//postfix_expression '[' expression ']'
+          r3 = string("$t7");
         else
-          reg3 = getNextReg(emittedCode[i].res);
+          r3 = get_reg(IRcode[i].res);
 
-        if (emittedCode[i].id1.second != NULL) {
-          if (emittedCode[i].id1.second->is_init == -5) {
-            loadArrayElement(emittedCode[i].id1, string("$t6"));
-            reg2 = string("$t6");
+        if (IRcode[i].id1.second != NULL) {
+          if (IRcode[i].id1.second->is_init == -5) {
+            array_to_reg(IRcode[i].id1, string("$t6"));
+            r2 = string("$t6");
           }
-          else reg2 = getNextReg(emittedCode[i].id1);
-          addLine("move " + reg3 + ", " + reg2);
+          else r2 = get_reg(IRcode[i].id1);
+          putln("move " + r3 + ", " + r2);
         }
         else {//constant
-          addLine("addi " + reg3 + ", $0, " + emittedCode[i].id1.first);
+          putln("addi " + r3 + ", $0, " + IRcode[i].id1.first);
         }
 
-        if (emittedCode[i].res.second->is_init == -5) {//t7, t9
-         if(currFunction == "main"){
-          addLine("li $s6, "+to_string(emittedCode[i].res.second->size) );
-          addLine("sub $s7, $fp, $s6");
-          addLine("lw $t8, 0($s7)");
-          addLine("li $t9, 4");
-          addLine("mult $t8, $t9");
-          addLine("mflo $t9");
-          addLine("li $s6, " + to_string(emittedCode[i].res.second->offset)); // put the offset in s6
-          addLine("add $s6, $s6, $t9");
-          addLine("sub $s7, $fp, $s6"); // combine the two components of the address
+        if (IRcode[i].res.second->is_init == -5) {//t7, t9
+         if(curr_func == "main"){
+          putln("li $s6, "+to_string(IRcode[i].res.second->size) );
+          putln("sub $s7, $fp, $s6");
+          putln("lw $t8, 0($s7)");
+          putln("li $t9, 4");
+          putln("mult $t8, $t9");
+          putln("mflo $t9");
+          putln("li $s6, " + to_string(IRcode[i].res.second->offset)); // put the offset in s6
+          putln("add $s6, $s6, $t9");
+          putln("sub $s7, $fp, $s6"); // combine the two components of the address
          }
          else{
-           addLine("li $s6, "+to_string(emittedCode[i].res.second->size) );
-           addLine("addi $s6, 76");
-           addLine("sub $s7, $fp, $s6");
-           addLine("lw $t8, 0($s7)");
-           addLine("li $t6, 4");
-           addLine("mult $t8, $t6");
-           addLine("mflo $t6");
-           addLine("li $s6, "+ to_string(emittedCode[i].res.second->offset));
-           addLine("addi $s6, 76");
-           addLine("sub $s7, $fp, $s6");
-           addLine("lw $t8, 0($s7)");
-           addLine("sub $s7, $t8, $t6");
+           putln("li $s6, "+to_string(IRcode[i].res.second->size) );
+           putln("addi $s6, 76");
+           putln("sub $s7, $fp, $s6");
+           putln("lw $t8, 0($s7)");
+           putln("li $t6, 4");
+           putln("mult $t8, $t6");
+           putln("mflo $t6");
+           putln("li $s6, "+ to_string(IRcode[i].res.second->offset));
+           putln("addi $s6, 76");
+           putln("sub $s7, $fp, $s6");
+           putln("lw $t8, 0($s7)");
+           putln("sub $s7, $t8, $t6");
          }
-          addLine("sw $t7, 0($s7)");
+          putln("sw $t7, 0($s7)");
         }
       }
 
-      // for unary operators
-      else if (emittedCode[i].op.first == "&") {
-        reg1 = getNextReg(emittedCode[i].res);
-        int off = emittedCode[i].id1.second->offset;
+      // ------------------- unary operators-------------------
+      else if (IRcode[i].op.first == "&") {
+        r1 = get_reg(IRcode[i].res);
+        int off = IRcode[i].id1.second->offset;
         off = -off;
         string u = to_string(off);
-        addLine("add " + reg1 + ", $fp, " + u);
-        if(emittedCode[i].id1.second->is_init == -5){
-           addLine("li $s6, "+to_string(emittedCode[i].id1.second->size) );
-           addLine("sub $s7, $fp, $s6");
-           addLine("lw $t8, 0($s7)");
-           addLine("li $t7, 4");
-           addLine("mult $t8, $t7");
-           addLine("mflo $t7");
-           addLine("addi $t7, "+to_string(off));
-           addLine("neg $t7, $t7");
+        putln("add " + r1 + ", $fp, " + u);
+        if(IRcode[i].id1.second->is_init == -5){
+           putln("li $s6, "+to_string(IRcode[i].id1.second->size) );
+           putln("sub $s7, $fp, $s6");
+           putln("lw $t8, 0($s7)");
+           putln("li $t7, 4");
+           putln("mult $t8, $t7");
+           putln("mflo $t7");
+           putln("addi $t7, "+to_string(off));
+           putln("neg $t7, $t7");
            u = string("$t7");//use of u
-           addLine("add "+reg1+", $fp, $t7");
+           putln("add "+r1+", $fp, $t7");
         }
-        saveOnJump();
+        save_reg();
       }
 
-      else if (emittedCode[i].op.first == "unary*") {
-        reg1 = getNextReg(emittedCode[i].res);
-        if(emittedCode[i].id1.second->is_init == -5) reg2 = string("$t6");
-        else reg2 = getNextReg(emittedCode[i].id1);
-        if (emittedCode[i].id1.second != NULL) {
-          if (emittedCode[i].id1.second->is_init == -5) {
-            addLine("li $s6, "+to_string(emittedCode[i].id1.second->size) );
-            addLine("sub $s7, $fp, $s6");
-            addLine("lw $t8, 0($s7)");
-            addLine("li $t9, 4");
-            addLine("mult $t8, $t9");
-            addLine("mflo $t9");
-            addLine("li $s6, " + to_string(emittedCode[i].id1.second->offset)); // put the offset in s6
-            addLine("add $s6, $s6, $t9");
-            addLine("sub $s7, $fp, $s6"); // combine the two components of the
+      else if (IRcode[i].op.first == "unary*") {
+        r1 = get_reg(IRcode[i].res);
+        if(IRcode[i].id1.second->is_init == -5) r2 = string("$t6");
+        else r2 = get_reg(IRcode[i].id1);
+        if (IRcode[i].id1.second != NULL) {
+          if (IRcode[i].id1.second->is_init == -5) {
+            putln("li $s6, "+to_string(IRcode[i].id1.second->size) );
+            putln("sub $s7, $fp, $s6");
+            putln("lw $t8, 0($s7)");
+            putln("li $t9, 4");
+            putln("mult $t8, $t9");
+            putln("mflo $t9");
+            putln("li $s6, " + to_string(IRcode[i].id1.second->offset)); // put the offset in s6
+            putln("add $s6, $s6, $t9");
+            putln("sub $s7, $fp, $s6"); // combine the two components of the
                                           // address
-            addLine("lw $t6, 0($s7)");
+            putln("lw $t6, 0($s7)");
           }
         }
-        addLine("lw " + reg1 + ", 0(" + reg2 + ")");
-        saveOnJump();
+        putln("lw " + r1 + ", 0(" + r2 + ")");
+        save_reg();
       }
 
-      else if (emittedCode[i].op.first == "unary-") {
-        reg1 = getNextReg(emittedCode[i].res);
-        if (emittedCode[i].id1.second != NULL) {
-          if(emittedCode[i].id1.second->is_init == -5 ) reg2 = string("$t6");
-          else reg2 = getNextReg(emittedCode[i].id1);
-          if (emittedCode[i].id1.second != NULL) {
-            if (emittedCode[i].id1.second->is_init == -5) {
-              loadArrayElement(emittedCode[i].id1, reg2);
+      else if (IRcode[i].op.first == "unary-") {
+        r1 = get_reg(IRcode[i].res);
+        if (IRcode[i].id1.second != NULL) {
+          if(IRcode[i].id1.second->is_init == -5 ) r2 = string("$t6");
+          else r2 = get_reg(IRcode[i].id1);
+          if (IRcode[i].id1.second != NULL) {
+            if (IRcode[i].id1.second->is_init == -5) {
+              array_to_reg(IRcode[i].id1, r2);
             }
           }
-          addLine("neg " + reg1 + ", " + reg2);
+          putln("neg " + r1 + ", " + r2);
         } else
-          addLine("addi " + reg1 + ", $0, -" + emittedCode[i].id1.first);
+          putln("addi " + r1 + ", $0, -" + IRcode[i].id1.first);
       }
 
-      else if (emittedCode[i].op.first == "~" || emittedCode[i].op.first == "!") {
-        reg1 = getNextReg(emittedCode[i].res);
-        reg2 = getNextReg(emittedCode[i].id1);
-        addLine("not " + reg1 + ", " + reg2);
+      else if (IRcode[i].op.first == "~" || IRcode[i].op.first == "!") {
+        r1 = get_reg(IRcode[i].res);
+        r2 = get_reg(IRcode[i].id1);
+        putln("not " + r1 + ", " + r2);
       }
 
-      else if (emittedCode[i].op.first == "unary+") {
-        reg1 = getNextReg(emittedCode[i].res);
-        if(emittedCode[i].id1.second->is_init == -5) reg2 = string("$t6");
-        else reg2 = getNextReg(emittedCode[i].id1);
-        if (emittedCode[i].id1.second != NULL) {
-          if (emittedCode[i].id1.second->is_init == -5) {
-            loadArrayElement(emittedCode[i].id1, reg2);
+      else if (IRcode[i].op.first == "unary+") {
+        r1 = get_reg(IRcode[i].res);
+        if(IRcode[i].id1.second->is_init == -5) r2 = string("$t6");
+        else r2 = get_reg(IRcode[i].id1);
+        if (IRcode[i].id1.second != NULL) {
+          if (IRcode[i].id1.second->is_init == -5) {
+            array_to_reg(IRcode[i].id1, r2);
           }
         }
-        addLine("lw " + reg1 + ", " + reg2);
+        putln("lw " + r1 + ", " + r2);
       }
 
-      // addition of integer operator
-      else if (emittedCode[i].op.first == "+int") {
-        operator_asm_code1(i);
-        if (emittedCode[i].id2.second != NULL) {
-          operator_asm_code2(i);
-          addLine("add " + reg1 + ", " + reg2 + ", " + reg3);
+      //      ------------------- addition of int ------------------- 
+      else if (IRcode[i].op.first == "+int") {
+        operator_asm1(i);
+        if (IRcode[i].id2.second != NULL) {
+          operator_asm2(i);
+          putln("add " + r1 + ", " + r2 + ", " + r3);
         } 
-        else addLine("addi " + reg1 + ", " + reg2 + ", " + emittedCode[i].id2.first);
+        else putln("addi " + r1 + ", " + r2 + ", " + IRcode[i].id2.first);
       }
-      // substraction of integer
-      else if (emittedCode[i].op.first == "-int") {
-        operator_asm_code1(i);
-        if (emittedCode[i].id2.second != NULL) {
-          operator_asm_code2(i);
-          addLine("sub " + reg1 + ", " + reg2 + ", " + reg3);
+
+      
+      // -------------------substraction of integer-------------------
+      else if (IRcode[i].op.first == "-int") {
+        operator_asm1(i);
+        if (IRcode[i].id2.second != NULL) {
+          operator_asm2(i);
+          putln("sub " + r1 + ", " + r2 + ", " + r3);
         } 
-        else addLine("addi " + reg1 + ", " + reg2 + ", -" +
-                  emittedCode[i].id2.first);
+        else putln("addi " + r1 + ", " + r2 + ", -" +
+                  IRcode[i].id2.first);
       }
 
-      // multiplication of integer
-      else if (emittedCode[i].op.first == "*int") {
-        operator_asm_code1(i);
-        if (emittedCode[i].id2.second != NULL) {
-          operator_asm_code2(i);
-          addLine("mult " + reg2 + ", " + reg3);
-          addLine("mflo " + reg1);
+      // -------------------multiplication of integer-------------------
+      else if (IRcode[i].op.first == "*int") {
+        operator_asm1(i);
+        if (IRcode[i].id2.second != NULL) {
+          operator_asm2(i);
+          putln("mult " + r2 + ", " + r3);
+          putln("mflo " + r1);
         } else {
-          addLine("addi $t9, $0, " + emittedCode[i].id2.first);
-          addLine("mult " + reg2 + ", $t9");
-          addLine("mflo " + reg1);
+          putln("addi $t9, $0, " + IRcode[i].id2.first);
+          putln("mult " + r2 + ", $t9");
+          putln("mflo " + r1);
         }
       }
-      // division of integers
-      else if (emittedCode[i].op.first == "/int") {
-        operator_asm_code1(i);
-        if (emittedCode[i].id2.second != NULL) {
-          operator_asm_code2(i);
-          addLine("div " + reg2 + ", " + reg3);
-          addLine("mflo " + reg1);
+      // -------------------division of integers-------------------
+      else if (IRcode[i].op.first == "/int") {
+        operator_asm1(i);
+        if (IRcode[i].id2.second != NULL) {
+          operator_asm2(i);
+          putln("div " + r2 + ", " + r3);
+          putln("mflo " + r1);
         } else {
-          addLine("addi $t9, $0, " + emittedCode[i].id2.first);
-          addLine("div " + reg2 + ", $t9");
-          addLine("mflo " + reg1);
+          putln("addi $t9, $0, " + IRcode[i].id2.first);
+          putln("div " + r2 + ", $t9");
+          putln("mflo " + r1);
         }
       }
-      // modulo of integers
-      else if (emittedCode[i].op.first == "%") {
-        operator_asm_code1(i);
-        if (emittedCode[i].id2.second != NULL) {
-          operator_asm_code2(i);
-          addLine("div " + reg2 + ", " + reg3);
-          addLine("mfhi " + reg1);
-        } else {
-          addLine("addi " + reg1 + ", $0, " + emittedCode[i].id2.first);
-          addLine("div " + reg2 + ", " + reg1);
-          addLine("mfhi " + reg1);
+      //      ------------------- addition of real/float ------------------- 
+      else if (IRcode[i].op.first == "+real") {
+        operator_asm1(i);
+        if (IRcode[i].id2.second != NULL) {
+          operator_asm2(i);
+          putln("mtc1 "+ r2 +", $f0");
+          putln("mtc1 "+ r3 +", $f1");
+          putln("add.s $f2, $f0, $f1");
+          putln("mfc1 $f2, " + r1);
+        } 
+        else{
+          putln("mtc1 "+ r2 +", $f0");
+          putln("li.s $f1, "+ IRcode[i].id2.first);
+          putln("add.s $f2, $f0, $f1");
+          putln("mfc1 $f2, " + r1);
+        }
+      }
+      //      ------------------- subtraction of real/float------------------- 
+      else if (IRcode[i].op.first == "-real") {
+        operator_asm1(i);
+        if (IRcode[i].id2.second != NULL) {
+          operator_asm2(i);
+          putln("mtc1 "+ r2 +", $f0");
+          putln("mtc1 "+ r3 +", $f1");
+          putln("sub.s $f2, $f0, $f1");
+          putln("mfc1 $f2, " + r1);
+        } 
+        else{
+          putln("mtc1 "+ r2 +", $f0");
+          putln("li.s $f1, -" + IRcode[i].id2.first);
+          putln("add.s $f2, $f0, $f1");
+          putln("mfc1 $f2, " + r1);
         }
       }
 
-      // printing one integer with newline
-      else if (emittedCode[i].op.first == "CALL" &&
-               emittedCode[i].id1.first == "printf") {
+      //      ------------------- multiplication of real/float ------------------- 
+      else if (IRcode[i].op.first == "*real") {
+        operator_asm1(i);
+        if (IRcode[i].id2.second != NULL) {
+          operator_asm2(i);
+          putln("mtc1 "+ r2 +", $f0");
+          putln("mtc1 "+ r3 +", $f1");
+          putln("mul.s " + r1 + ", " + r2 + ", " + r3);
+          putln("mfc1 $f2, " + r1);
+        } else {
+          putln("mtc1 "+ r2 +", $f0");
+          putln("add.s $f0, $0, " + IRcode[i].id2.first);
+          putln("mul.s " + r1 + ", " + r2 + ", $f0");
+          putln("mfc1 $f2, " + r1);
+        }
+      }
+
+      //      ------------------- division of real/float------------------- 
+      else if (IRcode[i].op.first == "/real") {
+        operator_asm1(i);
+        if (IRcode[i].id2.second != NULL) {
+          operator_asm2(i);
+          putln("mtc1 "+ r2 +", $f0");
+          putln("mtc1 "+ r3 +", $f1");
+          putln("div.s " + r1 + ", " + r2 + ", " + r3);
+          putln("mfc1 $f2, " + r1);
+        } else {
+          putln("mtc1 "+ r2 +", $f0");
+          putln("add.s $f0, $0, " + IRcode[i].id2.first);
+          putln("div.s " + r1 + ", " + r2 + ", $f0");
+          putln("mfc1 $f2, " + r1);
+        }
+      }
+
+      // ------------------- modulo of integers------------------- 
+      else if (IRcode[i].op.first == "%") {
+        operator_asm1(i);
+        if (IRcode[i].id2.second != NULL) {
+          operator_asm2(i);
+          putln("div " + r2 + ", " + r3);
+          putln("mfhi " + r1);
+        } else {
+          putln("addi " + r1 + ", $0, " + IRcode[i].id2.first);
+          putln("div " + r2 + ", " + r1);
+          putln("mfhi " + r1);
+        }
+      }
+
+      // ------------------- printing float------------------- 
+      else if (IRcode[i].op.first == "CALL" && IRcode[i].id1.first == "printf") {
         print_float_asm();
       }
 
-      // printing one integer without newline
-      else if (emittedCode[i].op.first == "CALL" &&
-               emittedCode[i].id1.first == "printn") {
+      // ------------------- printing  integer ------------------- 
+      else if (IRcode[i].op.first == "CALL" && IRcode[i].id1.first == "printn") {
         print_int_asm();
       }
-      // printing string
-      else if (emittedCode[i].op.first == "CALL" &&
-               emittedCode[i].id1.first == "prints") {
-        // string is already in a0;
+      // ------------------- printing string------------------- 
+      else if (IRcode[i].op.first == "CALL" && IRcode[i].id1.first == "prints") {
         print_string_asm();
       }
-      else if( emittedCode[i].op.first == "CALL" && emittedCode[i].id1.first == "fread"){
-        // string is already in a0
+      // ------------------- reading from file------------------- 
+      else if( IRcode[i].op.first == "CALL" && IRcode[i].id1.first == "fread"){
         read_file();
       }
-      else if( emittedCode[i].op.first == "CALL" && emittedCode[i].id1.first == "fwrite"){
+      // ------------------- writing to file------------------- 
+      else if( IRcode[i].op.first == "CALL" && IRcode[i].id1.first == "fwrite"){
         // string is already in a0
         write_file();
       }
-
-      // implementing '<'
-      else if (emittedCode[i].op.first == "<") {
-        assignment_expression_asm_code(i);
-        addLine("slt " + reg3 + ", " + reg2 + ", " + reg1);
+      // ------------------- length of string------------------- 
+      else if( IRcode[i].op.first == "CALL" && IRcode[i].id1.first == "strlen"){
+        // string is already in a0
+        putln("la $a0, stringspace");
+        putln("li $a1, 1024");
+        putln("li $t0, 0");
+        putln("loop:");
+        putln("lb $t1, 0($a0)");
+        putln("beqz $t1, exit");
+        putln("addi $a0, $a0, 1");
+        putln("addi $t0, $t0, 1");
+        putln("j loop");
+        putln("exit:");
+        putln("mov $v0, $t0");
+        putln("jr $ra");
+        argcount = 0;
       }
-      // implementing '>'
-      else if (emittedCode[i].op.first == ">") {
-        assignment_expression_asm_code(i);
-        addLine("sgt " + reg3 + ", " + reg2 + ", " + reg1);
+      // ------------------- math power function------------------- 
+      else if( IRcode[i].op.first == "CALL" && IRcode[i].id1.first == "pow"){
+        // $a0 = x, $a1 = n, power x^n
+        putln("jal Power");
+        putln("move $s0,$v0");//storing the return value
+        putln("Power:");
+        putln("sub $sp, $sp, -4");  // make room for the call-frame
+        putln("sw $ra, 4($sp)");  // save $ra on stack
+        putln("if: ");   
+        putln("bne $a1, $0, else_if");   
+        putln("li $v0, 1");   // # $v0 contains result
+        putln("j end_if");   
+        putln("else_if:");   
+        putln("bne $a1, 1, else");   
+        putln("move $v0, $a0");   
+        putln("j end_if");   
+        putln("else: ");   
+        putln("addi $a1, $a1, -1 ");   
+        putln("jal Power ");   
+        putln("mul $v0, $v0, $a0");   
+        putln("end_if:");   
+        putln("lw $ra, 4($sp)");   
+        putln("addi $sp, $sp, 4");   
+        putln("jr $ra");   // restore return addr. to $ra
+        
+        argcount = 0;
+      }
+      // ------------------- math sqrt function-------------------
+      else if( IRcode[i].op.first == "CALL" && IRcode[i].id1.first == "sqrt"){
+        //$a0 contains n
+        putln("jal isqrt");
+        putln("move $s0,$v0");//storing the return value
+        putln("isqrt: ");
+        putln("li	$v0, 0");
+        putln("li	$s0, 1");
+        putln("sll	$s0, $s0, 30");
+        putln("move	$s1, $a0");
+        putln("bgt	$s0, $s1, loop");
+        putln("shift:");
+        putln("srl	$s0, $s0, 2");
+        putln("bgt	$s0, $s1, shift");
+        putln("loop: ");
+        putln("add	$s2, $s0, $v0");
+        putln("blt	$s1, $s2, shiftright");
+        putln("sub	$s1, $s1, $s2");
+        putln("srl	$v0, $v0, 1");
+        putln("add	$v0, $v0, $s0");
+        putln("b	continue");
+        putln("shiftright: ");
+        putln("srl	$v0, $v0, 1");
+        putln("continue: ");
+        putln("srl	$s0, $s0, 2");
+        putln("bne	$s0, 0, loop");
+        putln("done: ");
+        putln("jr	$ra");
       }
 
-      // implementing '>='
-      else if (emittedCode[i].op.first == "GE_OP") {
-        assignment_expression_asm_code(i);
-        addLine("sge " + reg3 + ", " + reg2 + ", " + reg1);
+      // ------------------- for '<'------------------- 
+      else if (IRcode[i].op.first == "<") {
+        assignment_exp_asm(i);
+        putln("slt " + r3 + ", " + r2 + ", " + r1);
+      }
+      // ------------------- for '>'------------------- 
+      else if (IRcode[i].op.first == ">") {
+        assignment_exp_asm(i);
+        putln("sgt " + r3 + ", " + r2 + ", " + r1);
       }
 
-      // implementing '<='
-      else if (emittedCode[i].op.first == "LE_OP") {
-        assignment_expression_asm_code(i);
-        addLine("sle " + reg3 + ", " + reg2 + ", " + reg1);
+      // ------------------- for '>='------------------- 
+      else if (IRcode[i].op.first == "GE_OP") {
+        assignment_exp_asm(i);
+        putln("sge " + r3 + ", " + r2 + ", " + r1);
       }
 
-      // implementing 'EQ_OP' i.e. '=='
-      else if (emittedCode[i].op.first == "EQ_OP") {
-        assignment_expression_asm_code(i);
-        addLine("seq " + reg3 + ", " + reg2 + ", " + reg1);
+      // ------------------- for '<='------------------- 
+      else if (IRcode[i].op.first == "LE_OP") {
+        assignment_exp_asm(i);
+        putln("sle " + r3 + ", " + r2 + ", " + r1);
       }
 
-      // implementing 'NE_OP' i.e. '!='
-      else if (emittedCode[i].op.first == "NE_OP") {
-        assignment_expression_asm_code(i);
-        addLine("sne " + reg3 + ", " + reg2 + ", " + reg1);
+      // ------------------- for 'EQ_OP' i.e. '=='------------------- 
+      else if (IRcode[i].op.first == "EQ_OP") {
+        assignment_exp_asm(i);
+        putln("seq " + r3 + ", " + r2 + ", " + r1);
       }
 
-      else if (emittedCode[i].op.first == "RETURN" && currFunction == "main") {
-        addLine("li $a0, 0");
-        addLine("li $v0, 10");
-        addLine("syscall");
-      } else if (emittedCode[i].op.first == "CALL" &&
-                 emittedCode[i].id1.first == "scanf") {
-        reg1 = getNextReg(emittedCode[i].res);
+      // ------------------- for 'NE_OP' ( '!=' )------------------- 
+      else if (IRcode[i].op.first == "NE_OP") {
+        assignment_exp_asm(i);
+        putln("sne " + r3 + ", " + r2 + ", " + r1);
+      }
+      // -------------------return 0-------------------
+      else if (IRcode[i].op.first == "RETURN" && curr_func == "main") {
+        putln("li $a0, 0");
+        putln("li $v0, 10");
+        putln("syscall");
+      }
+      // ------------------- reading float-------------------
+      else if (IRcode[i].op.first == "CALL" &&
+                 IRcode[i].id1.first == "scanf") {
+        r1 = get_reg(IRcode[i].res);
         scan_float_asm();
-      }else if (emittedCode[i].op.first == "CALL" &&
-                 emittedCode[i].id1.first == "scann") {
-        reg1 = getNextReg(emittedCode[i].res);
+      }
+      // ------------------- reading int-------------------
+      else if (IRcode[i].op.first == "CALL" &&
+                 IRcode[i].id1.first == "scann") {
+        r1 = get_reg(IRcode[i].res);
         scan_int_asm();
-      }else if (emittedCode[i].op.first == "CALL" &&
-                 emittedCode[i].id1.first == "scans") {
-        reg1 = getNextReg(emittedCode[i].res);
+      }
+      // ------------------- reading string-------------------
+      else if (IRcode[i].op.first == "CALL" &&
+                 IRcode[i].id1.first == "scans") {
+        r1 = get_reg(IRcode[i].res);
         scan_string_asm();
-      } else if (emittedCode[i].op.first == "RETURN" &&
-                 currFunction != "main") {
-        if (emittedCode[i].id1.second != NULL) {
-          reg1 = getNextReg(emittedCode[i].id1);
-          addLine("move $v0, " + reg1);
+      }
+      // ------------------- return from function other than main-------------------
+      else if (IRcode[i].op.first == "RETURN" &&
+                 curr_func != "main") {
+        if (IRcode[i].id1.second != NULL) {
+          r1 = get_reg(IRcode[i].id1);
+          putln("move $v0, " + r1);
         } else {
-          addLine("li $v0, " + emittedCode[i].id1.first);
+          putln("li $v0, " + IRcode[i].id1.first);
         }
-        addLine("b " + currFunction + "end");
-      } else if (emittedCode[i].op.first == "CALL") {
-        addLine("jal " + emittedCode[i].id1.first);
-        if (emittedCode[i].res.second != NULL) {
-          reg1 = getNextReg(emittedCode[i].res);
-          addLine("move " + reg1 + ", $v0");
-          counter = 0;
+        putln("b " + curr_func + "end");
+      } else if (IRcode[i].op.first == "CALL") {
+        putln("jal " + IRcode[i].id1.first);
+        if (IRcode[i].res.second != NULL) {
+          r1 = get_reg(IRcode[i].res);
+          putln("move " + r1 + ", $v0");
+          argcount = 0;
         }
       }
 
     }
-    // implementing returns from non-main functions       caller sequence
-    else if (emittedCode[i].stmtNum == -3 && currFunction != "main") {
-      addLine(currFunction + "end:");
-
-      // Removing the local data of the functions
-      int sizeEnd = symbol_table::lookup(currFunction)->size + 4;
-      addLine("addi $sp, $sp, " + to_string(sizeEnd));
+    //   return sequence
+    else if (IRcode[i].stmtCounter == -3 && curr_func != "main") {
+      putln(curr_func + "end:");
+      int sizeEnd = symbol_table::lookup(curr_func)->size + 4;
+      putln("addi $sp, $sp, " + to_string(sizeEnd));
       return_seq_asm_code();
-      addLine("addi $sp, $sp, 72");
-      // jump to the calling procedure
-      addLine("jr $ra");
-
+      putln("addi $sp, $sp, 72");
+      putln("jr $ra");
     }
-    // jump statements
+    // ------------------- condtional and unconditional goto-------------------
     else {
-      if (emittedCode[i].op.first == "GOTO" && emittedCode[i].id1.first == "") {
-        unconditionalgoto = 1;
-        saveOnJump();
-        addLine("j " + gotoLabels[emittedCode[i].stmtNum]);
-      } else if (emittedCode[i].op.first == "GOTO" &&
-                 emittedCode[i].id1.first == "IF") {
-        saveOnJump();
-        if (emittedCode[i].id2.second != NULL) {
-          reg1 = getNextReg(emittedCode[i].id2);
-          addLine("bne $0, " + reg1 + ", " +gotoLabels[emittedCode[i].stmtNum]);
+      if (IRcode[i].op.first == "GOTO" && IRcode[i].id1.first == "") {
+        goto_jump = 1;
+        save_reg();
+        putln("j " + Goto_labels[IRcode[i].stmtCounter]);
+      } else if (IRcode[i].op.first == "GOTO" &&
+                 IRcode[i].id1.first == "IF") {
+        save_reg();
+        if (IRcode[i].id2.second != NULL) {
+          r1 = get_reg(IRcode[i].id2);
+          putln("bne $0, " + r1 + ", " +Goto_labels[IRcode[i].stmtCounter]);
         } else {
-          addLine("addi $t9, $0, " + emittedCode[i].id2.first);
-          addLine("bne $0, $t9, " + gotoLabels[emittedCode[i].stmtNum]);
+          putln("addi $t9, $0, " + IRcode[i].id2.first);
+          putln("bne $0, $t9, " + Goto_labels[IRcode[i].stmtCounter]);
         }
       }
     }
-    saveOnJump();// allocating
+    save_reg();
   }
 }
 
 
-void resetRegister(){
+void reset_reg(){
   pair<string, sEntry*> t0 = pair<string, sEntry*>("$t0", NULL);
   pair<string, sEntry*> t1 = pair<string, sEntry*>("$t1", NULL);
   pair<string, sEntry*> t2 = pair<string, sEntry*>("$t2", NULL);
@@ -525,17 +658,17 @@ void resetRegister(){
   pair<string, sEntry*> s2 = pair<string, sEntry*>("$s2", NULL);
   pair<string, sEntry*> s3 = pair<string, sEntry*>("$s3", NULL);
   pair<string, sEntry*> s4 = pair<string, sEntry*>("$s4", NULL);
-  freeReg.push(t1);
-  freeReg.push(t2);
-  freeReg.push(t3);
-  freeReg.push(t4);
-  freeReg.push(t0);
-  freeReg.push(t5);
-  freeReg.push(s0);
-  freeReg.push(s1);
-  freeReg.push(s2);
-  freeReg.push(s3);
-  freeReg.push(s4);
+  free_reg.push(t1);
+  free_reg.push(t2);
+  free_reg.push(t3);
+  free_reg.push(t4);
+  free_reg.push(t0);
+  free_reg.push(t5);
+  free_reg.push(s0);
+  free_reg.push(s1);
+  free_reg.push(s2);
+  free_reg.push(s3);
+  free_reg.push(s4);
   pair<string, string> _t0 = pair<string, string>("$t0", "");
   pair<string, string> _t1 = pair<string, string>("$t1", "");
   pair<string, string> _t2 = pair<string, string>("$t2", "");
@@ -547,11 +680,11 @@ void resetRegister(){
   pair<string, string> _s2 = pair<string, string>("$s2", "");
   pair<string, string> _s3 = pair<string, string>("$s3", "");
   pair<string, string> _s4 = pair<string, string>("$s4", "");
+  reg.insert(_t0);
   reg.insert(_t1);
   reg.insert(_t2);
   reg.insert(_t3);
   reg.insert(_t4);
-  reg.insert(_t0);
   reg.insert(_t5);
   reg.insert(_s0);
   reg.insert(_s1);
@@ -560,284 +693,270 @@ void resetRegister(){
   reg.insert(_s4);
 }
 
-string getNextReg(qid temporary){
-  //checking if the temporary is already in a register
+string get_reg(qid temp){
+  //checking if the temp is already in a register
   auto it = reg.begin();
   string r;
   for(; it!= reg.end(); it++){
-    if (it->second == temporary.first) {
+    if (it->second == temp.first) {
       r = it->first;
       break;
     }
   }
   if(it == reg.end())r = string("");
-  
-  if( r!=""){ r.erase(r.begin(), r.begin()+1);return r; }
+  if( r!=""){ return r; }
 
-  //Check if we have a freeReg
-  if(freeReg.size()) {
+  //Check if we have a free_reg
+  if(free_reg.size()) {
 
-    pair<string, sEntry*> t = freeReg.front(); // register
-    freeReg.pop();
+    pair<string, sEntry*> t = free_reg.front(); // register
+    free_reg.pop();
           
-    int offset1 = temporary.second->offset;
+    int offset1 = temp.second->offset;
 
-    if(currFunction!="main") offset1 = offset1+76;//maybe for local variables
+    if(curr_func!="main") offset1 = offset1+76;//maybe for local variables
     r = t.first;
 
-    // now we store value to the location in the stack
-    addLine("li $s6, "+ to_string(offset1));       // put the offset in s6
-  //  addLine("add $s6, $s6, $s6");        // double the offset
-  //  addLine("add $s6, $s6, $s6");        // double the offset again(4x)
-    addLine("sub $s7, $fp, $s6");        //combine the two components of the address
-    addLine("lw "+ r +", 0($s7)"); // load word at address s7 to r
-    t.second  = temporary.second;
-    regInUse.push(t);
-    string tmp = "_" + r;
-    reg[tmp] = temporary.first;
+    // store the value from location to register
+    putln("li $s6, "+ to_string(offset1));       // put the offset in $s6
+    putln("sub $s7, $fp, $s6");        //$s7 contains address of value
+    putln("lw "+ r +", 0($s7)"); // load value at address $s7 to r
+    t.second  = temp.second;
+    used_reg.push(t);
+    string tmp = "_"  + r;
+    reg[tmp] = temp.first;
   }
-  else{// register spilling
-    pair<string, sEntry*> t = regInUse.front();
-    regInUse.pop();
-    // Update the exisiting identifier value from resetRegister
-    sEntry* currTmp = t.second;
+  else{// no available register
+    pair<string, sEntry*> t = used_reg.front();
+    used_reg.pop();
+    // save the values present in the used register
+    sEntry* curr_sym_tab = t.second;
     r = t.first;
-    int offset = currTmp->offset;
-    if(currFunction!="main") offset = offset+76;
-    //store the current value in r in the register s7
-    addLine("li $s6, "+ to_string(offset));
-    addLine("sub $s7, $fp, $s6");        //combine the two components of the address
+    int offset = curr_sym_tab->offset;
+    if(curr_func!="main") offset = offset+76;
+    //store the current value in r in the register s7 with the proper offset to frame
+    putln("li $s6, "+ to_string(offset));
+    putln("sub $s7, $fp, $s6");        
+    putln("sw "+ r +", 0($s7)");
 
-    addLine("sw "+ r +", 0($s7)");
+    //now we can  use the register to store the tmp
+    offset = temp.second->offset;
+    if(curr_func!="main") offset = offset+76;
 
-    // Load this register with temporary :: exchange
-    offset = temporary.second->offset;
-    if(currFunction!="main") offset = offset+76;
-
-    // now we store value to the location in the stack
-    addLine("li $s6, "+ to_string(offset) );       // put the offset in s6
-  //  addLine("add $s6, $s6, $s6");        // double the offset
-  //  addLine("add $s6, $s6, $s6");        // double the offset again(4x)
-    addLine("sub $s7, $fp, $s6");        //combine the two components of the address
-
-    addLine("lw "+ r +", 0($s7)");
-    t.second  = temporary.second;
-    regInUse.push(t);
+    // now we store value from the location in the stack to r
+    putln("li $s6, "+ to_string(offset) );       // put the offset in $s6
+    putln("sub $s7, $fp, $s6"); 
+    putln("lw "+ r +", 0($s7)");
+    t.second  = temp.second;
+    used_reg.push(t);
     string tmp = "_" + r;
-    reg[tmp] = temporary.first;
+    reg[tmp] = temp.first;
   }
 }
-void loadArrayElement(qid temporary, string registerTmp){//4 * size + offset
-    if(currFunction == "main") {
-      addLine("li $s6, "+to_string(temporary.second->size) );
-      addLine("sub $s7, $fp, $s6");
-      addLine("lw $t8, 0($s7)");
-      addLine("li $t7, 4");
-      addLine("mult $t8, $t7");
-      addLine("mflo $t7");
-      addLine("li $s6, " + to_string(temporary.second->offset)); // put the offset in s6
-      addLine("add $s6, $s6, $t7");
-      addLine("sub $s7, $fp, $s6"); // combine the two components of the
+void array_to_reg(qid tmp, string regtmp){//4 * size + offset
+    if(curr_func == "main") {
+      putln("li $s6, "+to_string(tmp.second->size) );
+      putln("sub $s7, $fp, $s6");
+      putln("lw $t8, 0($s7)");
+      putln("li $t7, 4");
+      putln("mult $t8, $t7");
+      putln("mflo $t7");
+      putln("li $s6, " + to_string(tmp.second->offset)); 
+      putln("add $s6, $s6, $t7");
+      putln("sub $s7, $fp, $s6"); 
     }else{
-      addLine("li $s6, "+to_string(temporary.second->size) );
-      addLine("addi $s6, 76");
-      addLine("sub $s7, $fp, $s6");
-      addLine("lw $t8, 0($s7)");
-      addLine("li $t7, 4");
-      addLine("mult $t8, $t7");
-      addLine("mflo $t7");
-      addLine("li $s6, "+ to_string(temporary.second->offset));
-      addLine("addi $s6, 76");
-      addLine("sub $s7, $fp, $s6");
-      addLine("lw $t8, 0($s7)");
-      addLine("sub $s7, $t8, $t7");
+      putln("li $s6, "+to_string(tmp.second->size) );
+      putln("addi $s6, 76");
+      putln("sub $s7, $fp, $s6");
+      putln("lw $t8, 0($s7)");
+      putln("li $t7, 4");
+      putln("mult $t8, $t7");
+      putln("mflo $t7");
+      putln("li $s6, "+ to_string(tmp.second->offset));
+      putln("addi $s6, 76");
+      putln("sub $s7, $fp, $s6");
+      putln("lw $t8, 0($s7)");
+      putln("sub $s7, $t8, $t7");
     }  
-    addLine("lw "+ registerTmp +", 0($s7)");
+    putln("lw "+ regtmp +", 0($s7)");
 }
 
 // flush all registers on jump
-void saveOnJump(){
+void save_reg(){
   pair<string, sEntry*> t;
-  while(regInUse.size()){
-    t = regInUse.front();
-    regInUse.pop();
-    // Update the exisiting identifier value from resetRegister
-    sEntry* currTmp = t.second;
+  while(used_reg.size()){
+    t = used_reg.front();
+    used_reg.pop();
+    // Update the exisiting identifier value from reset_reg
+    sEntry* curr_sym_tab = t.second;
     string r = t.first;
-    int offset = currTmp->offset;
-    if(currFunction!="main") offset = offset+76;
+    int offset = curr_sym_tab->offset;
+    if(curr_func!="main") offset = offset+76;
 
-    addLine("li $s6, "+ to_string(offset));
-    addLine("sub $s7, $fp, $s6");        //combine the two components of the address
-
-    addLine("sw "+ r +", 0($s7)");
+    putln("li $s6, "+ to_string(offset));
+    putln("sub $s7, $fp, $s6"); 
+    putln("sw "+ r +", 0($s7)");
     t.second  = NULL;
-    freeReg.push(t);
+    free_reg.push(t);
     string tmp = "_" + r;
     reg[tmp] = "";
   }
 }
 
-void assignment_expression_asm_code(int i){
-  if (emittedCode[i].id2.second == NULL) {
-          addLine("addi $t9, $0, " + emittedCode[i].id2.first);
-          reg1 = "$t9";
+void assignment_exp_asm(int i){//helper function for comparison
+  if (IRcode[i].id2.second == NULL) {
+          putln("addi $t9, $0, " + IRcode[i].id2.first);
+          r1 = "$t9";
   }
-  else if(emittedCode[i].id2.second->is_init == -5){
-      reg1 = string("$t6");
-      loadArrayElement(emittedCode[i].id2, reg1);
+  else if(IRcode[i].id2.second->is_init == -5){
+      r1 = string("$t6");
+      array_to_reg(IRcode[i].id2, r1);
   }
-  else reg1 = getNextReg(emittedCode[i].id2);
+  else r1 = get_reg(IRcode[i].id2);
 
-  if(emittedCode[i].id1.second->is_init == -5){
-    reg2 = string("$t7");
-    loadArrayElement(emittedCode[i].id1, reg2);
+  if(IRcode[i].id1.second->is_init == -5){
+    r2 = string("$t7");
+    array_to_reg(IRcode[i].id1, r2);
   }
-  else  reg2 = getNextReg(emittedCode[i].id1);
-  reg3 = getNextReg(emittedCode[i].res);
+  else  r2 = get_reg(IRcode[i].id1);
+  r3 = get_reg(IRcode[i].res);
   return ;
 }
 
-void operator_asm_code1(int i){
-  reg1 = getNextReg(emittedCode[i].res);
-  if(emittedCode[i].id1.second->is_init == -5) reg2 = string("$t6");
-  else reg2 = getNextReg(emittedCode[i].id1);
-  if (emittedCode[i].id1.second != NULL) {
-    if (emittedCode[i].id1.second->is_init == -5) {
-      loadArrayElement(emittedCode[i].id1, reg2);
+void operator_asm1(int i){//helper function for arithmetic
+  r1 = get_reg(IRcode[i].res);
+  if(IRcode[i].id1.second->is_init == -5) r2 = string("$t6");
+  else r2 = get_reg(IRcode[i].id1);
+  if (IRcode[i].id1.second != NULL) {
+    if (IRcode[i].id1.second->is_init == -5) {
+      array_to_reg(IRcode[i].id1, r2);
     }
   }
   return;
 }
 
-void operator_asm_code2(int i){
-  if(emittedCode[i].id2.second->is_init == -5) {
-    reg3 = string("$t7");
-    loadArrayElement(emittedCode[i].id2, reg3);
+void operator_asm2(int i){//helper function for arithmetic
+  if(IRcode[i].id2.second->is_init == -5) {
+    r3 = string("$t7");
+    array_to_reg(IRcode[i].id2, r3);
   }
-  else reg3 = getNextReg(emittedCode[i].id2);
+  else r3 = get_reg(IRcode[i].id2);
 }
 void call_seq_asm_code(){ //using callee-save method
     // store return address of the caller
-    addLine("sw $ra, 0($sp)");
-
+    putln("sw $ra, 0($sp)");
     // store the frame pointe of the caller
-    addLine("sw $fp, 4($sp)");
-
+    putln("sw $fp, 4($sp)");
     // set the frame pointer of the callee    8($sp)
-    addLine("la $fp, 72($sp)");
-
+    putln("la $fp, 72($sp)");
     // storing the remaining registers
-    addLine("sw $t0, 12($sp)");
-    addLine("sw $t1, 16($sp)");
-    addLine("sw $t2, 20($sp)");
-    addLine("sw $t3, 24($sp)");
-    addLine("sw $t4, 28($sp)");
-    addLine("sw $t5, 32($sp)");
-    addLine("sw $t6, 36($sp)");
-    addLine("sw $t7, 40($sp)");
-    addLine("sw $t8, 44($sp)");
-    addLine("sw $t9, 48($sp)");
-    addLine("sw $s0, 52($sp)");
-    addLine("sw $s1, 56($sp)");
-    addLine("sw $s2, 60($sp)");
-    addLine("sw $s3, 64($sp)");
-    addLine("sw $s4, 68($sp)");
+    putln("sw $t0, 12($sp)");
+    putln("sw $t1, 16($sp)");
+    putln("sw $t2, 20($sp)");
+    putln("sw $t3, 24($sp)");
+    putln("sw $t4, 28($sp)");
+    putln("sw $t5, 32($sp)");
+    putln("sw $t6, 36($sp)");
+    putln("sw $t7, 40($sp)");
+    putln("sw $t8, 44($sp)");
+    putln("sw $t9, 48($sp)");
+    putln("sw $s0, 52($sp)");
+    putln("sw $s1, 56($sp)");
+    putln("sw $s2, 60($sp)");
+    putln("sw $s3, 64($sp)");
+    putln("sw $s4, 68($sp)");
 }
 void return_seq_asm_code(){ //using callee-save method
-         // Get environment pointers
-      addLine("lw $ra, 0($sp)");
-      addLine("lw $fp, 4($sp)");
-      addLine("lw $a0, 8($sp)");
-
+      // load environment pointers
+      putln("lw $ra, 0($sp)");
+      putln("lw $fp, 4($sp)");
+      putln("lw $a0, 8($sp)");
       // Restoring all the Registers
-      addLine("lw $t0, 12($sp)");
-      addLine("lw $t1, 16($sp)");
-      addLine("lw $t2, 20($sp)");
-      addLine("lw $t3, 24($sp)");
-      addLine("lw $t4, 28($sp)");
-      addLine("lw $t5, 32($sp)");
-      addLine("lw $t6, 36($sp)");
-      addLine("lw $t7, 40($sp)");
-      addLine("lw $t8, 44($sp)");
-      addLine("lw $t9, 48($sp)");
-      addLine("lw $s0, 52($sp)");
-      addLine("lw $s1, 56($sp)");
-      addLine("lw $s2, 60($sp)");
-      addLine("lw $s3, 64($sp)");
-      addLine("lw $s4, 68($sp)");
+      putln("lw $t0, 12($sp)");
+      putln("lw $t1, 16($sp)");
+      putln("lw $t2, 20($sp)");
+      putln("lw $t3, 24($sp)");
+      putln("lw $t4, 28($sp)");
+      putln("lw $t5, 32($sp)");
+      putln("lw $t6, 36($sp)");
+      putln("lw $t7, 40($sp)");
+      putln("lw $t8, 44($sp)");
+      putln("lw $t9, 48($sp)");
+      putln("lw $s0, 52($sp)");
+      putln("lw $s1, 56($sp)");
+      putln("lw $s2, 60($sp)");
+      putln("lw $s3, 64($sp)");
+      putln("lw $s4, 68($sp)");
 }
-
-
 void print_int_asm(){
-  addLine("li $v0, 1");
-  addLine("syscall");
-  counter = 0; 
+  putln("li $v0, 1");
+  putln("syscall");
+  argcount = 0; 
 }
 void print_float_asm(){
-  addLine("mov $f12, $a0");
-  addLine("li $v0, 2");
-  addLine("syscall");
-  counter = 0;   
+  putln("mov $f12, $a0");
+  putln("li $v0, 2");
+  putln("syscall");
+  argcount = 0;   
 }
 void print_string_asm(){
-  addLine("li $v0, 4");
-  addLine("syscall");
-  counter = 0;  
+  putln("li $v0, 4");
+  putln("syscall");
+  argcount = 0;  
 }
 void scan_int_asm(){
-        addLine("li $v0, 5");
-        addLine("syscall");
-        addLine("move " + reg1 + ", $v0");  
+        putln("li $v0, 5");
+        putln("syscall");
+        putln("move " + r1 + ", $v0");  
 }
 void scan_float_asm(){
-        addLine("li $v0, 6");
-        addLine("syscall");
-        addLine("move " + reg1 + ", $f0");  
+        putln("li $v0, 6");
+        putln("syscall");
+        putln("move " + r1 + ", $f0");  
 }
 void scan_string_asm(){
-        addLine("la $a0, stringspace");
-        addLine("li $a1, 1024");
-        addLine("li $v0, 8 ");
-        addLine("syscall");
-        addLine("la $v0, stringspace");
-        addLine("move " + reg1 + ", $v0");  
+        putln("la $a0, stringspace");
+        putln("li $a1, 1024");
+        putln("li $v0, 8 ");
+        putln("syscall");
+        putln("la $v0, stringspace");
+        putln("move " + r1 + ", $v0");  
 }
 void read_file(){
-        addLine("li $v0, 13");//syscall 13 - open file
-        addLine("li $a1, 0"); //set to read mode
-        addLine("li $a2, 0");//
-        addLine("syscall"); //
-        addLine("move $s0, $v0"); //saves filedescriptor
-        addLine("li $a1, 0"); //set to read mode 
-        addLine("li $a2, 0");// 
-        addLine("syscall"); // 
-        addLine("move $s6, $v0"); //saves filedescriptor
-        addLine("li $v0, 14");
-        addLine("move $a0, $s6");
-        addLine("la $a1, reservedspace");
-        addLine("li $a2, 1024");
-        addLine("syscall");
-        addLine("li $v0, 4");
-        addLine("la $a0, reservedspace");
-        addLine("syscall");
-        addLine("li $v0 16");
-        addLine("move $a0, $s6");
-        addLine("syscall");
-        counter = 0;
+        putln("li $v0, 13");//syscall 13 - open file
+        putln("li $a1, 0"); //set to read mode
+        putln("li $a2, 0");
+        putln("syscall"); 
+        putln("move $s0, $v0"); //saves filedescriptor
+        putln("li $a1, 0"); //set to read mode 
+        putln("li $a2, 0");
+        putln("syscall"); 
+        putln("move $s6, $v0"); //saves filedescriptor
+        putln("li $v0, 14");
+        putln("move $a0, $s6");
+        putln("la $a1, reservedspace");
+        putln("li $a2, 1024");
+        putln("syscall");
+        putln("li $v0, 4");
+        putln("la $a0, reservedspace");
+        putln("syscall");
+        putln("li $v0 16");
+        putln("move $a0, $s6");
+        putln("syscall");
+        argcount = 0;
 }
 void write_file(){
-        addLine("li $v0, 13");//syscall 13 - open file
-        addLine("li $a1, 0"); //set to read mode 
-        addLine("li $a2, 0");// 
-        addLine("syscall"); // 
-        addLine("move $s6, $v0"); //saves filedescriptor
-        addLine("li $v0, 15");
-        addLine("move $a0, $s6");
-        addLine("li $a2, 30");
-        addLine("syscall");
-        addLine("li $v0 16");
-        addLine("move $a0, $s6");
-        addLine("syscall");
-        counter = 0;  
+        putln("li $v0, 13");//syscall 13 - open file
+        putln("li $a1, 0"); //set to read mode 
+        putln("li $a2, 0");
+        putln("syscall");  
+        putln("move $s6, $v0"); //saves filedescriptor
+        putln("li $v0, 15");
+        putln("move $a0, $s6");
+        putln("li $a2, 30");
+        putln("syscall");
+        putln("li $v0 16");
+        putln("move $a0, $s6");
+        putln("syscall");
+        argcount = 0;  
 }

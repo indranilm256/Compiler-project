@@ -1,3 +1,4 @@
+
 void fewParam(int* a,int* b,int* c){
     int temp=*a;
     *a=*b;
@@ -12,10 +13,7 @@ void moreParam(int* a,int* b){
 }
 
 int main(){
-    int a=1;
-    int b=2;
-    int c=3;
-    fewParam(&a,&b);
-    moreParam(&a,&b,&c);
+    int* p;
+    p = (int*)malloc(8);
     return 0;
 }

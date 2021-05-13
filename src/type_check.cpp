@@ -189,7 +189,7 @@ char* type_check :: multiplicative(string type1, string type2, char op)
                 }
                 else
                 {
-                    a = "float";
+                    a = "real";
                 }
                 return a;
             }
@@ -209,7 +209,7 @@ char* type_check ::additive(string type1, string type2, char op)
         }
         else
         {
-            a = "float";
+            a = "real";
         }
         return a;
     }

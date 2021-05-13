@@ -1,5 +1,4 @@
-#define cont 8
-int main( unsigned float a,int b){
+int main( float a,int b){
     int k=1.0;
     int a = cont;
     char j[10];

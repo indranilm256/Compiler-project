@@ -4,7 +4,6 @@ YACC=bison -y
 SRC=src
 BIN=bin
 OBJ=obj
-MYLIBRARY=$(CURDIR)
 CPPFLAG = -Wno-write-strings
 all: $(BIN)/parser
 
@@ -26,4 +25,7 @@ $(OBJ)/%.o: $(SRC)/%.cpp
 
 clean:
 	$(RM) -rf $(OBJ) $(BIN)
-	$(RM) output.txt  parser.output graph.gv myAST.dot *.csv *.txt
+	$(RM) output.txt  graph.gv myAST.dot *.csv *.txt *.asm
+
+clean1:
+	$(RM) output.txt  graph.gv myAST.dot *.csv *.txt *.asm

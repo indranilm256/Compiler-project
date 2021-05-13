@@ -10,21 +10,21 @@
 #include "nodes.h"
 using namespace std;
 
-extern string currFunction;
+extern string curr_func;
 
-void generateCode();
-void assignment_expression_asm_code(int i);
-void operator_asm_code1(int i);
-void operator_asm_code2(int i);
+void code_generator();
+void assignment_exp_asm(int i);
+void operator_asm1(int i);
+void operator_asm2(int i);
 void call_seq_asm_code();
 void return_seq_asm_code();
-void addLine(string a);
-void printCode();
-void resetRegister();
-string getNextReg(qid temporary);
-void addData(string a);
-void saveOnJump();
-void loadArrayElement(qid temporary, string registerTmp);
+void putln(string a);
+void print_code();
+void reset_reg();
+string get_reg(qid temp);
+void putdata(string a);
+void save_reg();
+void array_to_reg(qid temp, string regtmp);
 void scan_string_asm();
 void scan_float_asm();
 void scan_int_asm();

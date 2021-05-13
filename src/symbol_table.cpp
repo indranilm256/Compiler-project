@@ -4,9 +4,11 @@
 #include <iostream>
 using namespace std;
 map<string , string> funcArgumentMap;
+map<string , symTable*> toStructTable;
+map<string , int> structSize;
 map<symTable *, symTable*> tParent;
 map<symTable *, int> symTable_type;
-map<string ,int> switchItem;
+// map<string ,int> switchItem;
 map<int, string> statusMap;
 long int blockSize[100];
 int blockNo ;
@@ -14,41 +16,68 @@ int blockNo ;
 long long offsetNext[100];
 int offsetNo;
 ////////////////////////////////
-long long offsetG[100];
-int offsetGNo;
-
+long long global_offset[100];
+int global_offset_number;
+int structCount;
+int structOffset;
 symTable GST;
 int is_next;
 symTable *curr;
+symTable *structTable;
+symTable *tempStructTable;
 
-void symbol_table:: switchItemMap(){
-   //symbol_table temp = this;
-   statusMap.insert(make_pair<int, string>(1,"iVal"));
-   statusMap.insert(make_pair<int, string>(2,"fVal"));
-   statusMap.insert(make_pair<int, string>(3,"dVal"));
-   statusMap.insert(make_pair<int, string>(4,"sVal"));
-   statusMap.insert(make_pair<int, string>(5,"cVal"));
-   statusMap.insert(make_pair<int, string>(6,"bVal"));
-   switchItem.insert(make_pair<string, int>("string", 1));
-   switchItem.insert(make_pair<string, int>("int", 2));
-   switchItem.insert(make_pair<string, int>("func", 3));
-   switchItem.insert(make_pair<string, int>("Keyword", 1));
-   switchItem.insert(make_pair<string, int>("Operator",1));
-   switchItem.insert(make_pair<string, int>("IDENTIFIER", 1));
-   switchItem.insert(make_pair<string, int>("ENUMERATION_CONSTANT", 1));
-   switchItem.insert(make_pair<string, int>("TYPEDEF_NAME", 1));
-   // cout<<switchItem["string"];
+
+void symbol_table:: makeStructTable(){
+   symTable* myStruct = new symTable;
+   structCount++;
+   structTable = myStruct;
+   structOffset = 0;  
 }
 
-void symbol_table:: stInitialize(){
+bool symbol_table:: insertStructSymbol(string key, string type, ull size, ull offset, int isInit ){
+           if((*structTable).count(key)) return false;
+           insertSymbol(*structTable, key, type, size, -10, isInit);
+           structOffset += size;
+           return true;
+}
+
+bool symbol_table::endStructTable(string structName){
+   if(toStructTable.count(structName)) return false;
+   toStructTable.insert(pair<string, symTable*>(string("STRUCT_")+structName, structTable)); 
+   tParent.insert(pair<symTable*, symTable*>(structTable, NULL));
+   //cout<<structOffset<<"xsa"<<endl;
+   structSize.insert(pair<string, int>(string("STRUCT_")+structName, structOffset));
+   structName = "struct_" + structName + ".csv";
+   printSymTables(structTable, structName);
+   return true;
+}
+
+string symbol_table::structMemberType(string structName, string idT){
+   tempStructTable = toStructTable[structName];
+   sEntry* aT = (*tempStructTable)[idT];
+   return aT->type;
+}
+
+bool symbol_table::isStruct(string structName){
+   if(toStructTable.count(structName)) return true;
+}
+
+int symbol_table::structLookup(string structName, string idStruct){
+   if(toStructTable.count(structName)!=1) return 1;
+   else if((*toStructTable[structName]).count(idStruct)!=1) return 2;
+   return 0;
+
+}
+
+
+void symbol_table:: symbol_table_init(){
     for(blockNo=0;blockNo<100;blockNo++){
         blockSize[blockNo]=0;
     }
-    offsetGNo=0;
-    offsetG[offsetGNo]=0;
+    global_offset_number=0;
+    global_offset[global_offset_number]=0;
     offsetNo=0;
     blockNo=0;
-    switchItemMap();
     tParent.insert(make_pair<symTable*, symTable*>(&GST, NULL));
     symTable_type.insert(make_pair<symTable*, int>(&GST, 1));
     curr = &GST;
@@ -60,14 +89,16 @@ void symbol_table:: stInitialize(){
     funcArgumentMap.insert(pair<string,string>(string("scanf"),string("char*,float")));
     funcArgumentMap.insert(pair<string,string>(string("scann"),string("char*,int")));
     funcArgumentMap.insert(pair<string,string>(string("scans"),string("char*,...")));
-    funcArgumentMap.insert(pair<string,string>(string("strlen"),string("void*")));
+    funcArgumentMap.insert(pair<string,string>(string("strlen"),string("char*")));
     funcArgumentMap.insert(pair<string,string>(string("fread"),string("char*")));
     funcArgumentMap.insert(pair<string,string>(string("fwrite"),string("char*,char*")));
+    funcArgumentMap.insert(pair<string,string>(string("pow"),string("int,int")));
+    funcArgumentMap.insert(pair<string,string>(string("sqrt"),string("int")));
 }
 void symbol_table:: paramTable(){   
       offsetNo++;
-      offsetNext[offsetNo]=offsetG[offsetGNo];
-      makeSymTable(string("Next"),S_FUNC,string(""));
+      offsetNext[offsetNo]=global_offset[global_offset_number];
+      make_symbol_table(string("Next"),S_FUNC,string(""));
       is_next=1;
 }
 
@@ -89,46 +120,47 @@ string symbol_table:: returnSymType(string key){
 void symbol_table:: insertSymbol(symTable& table,string key,string type,ull size,ll offset, int isInit){
    blockSize[blockNo] = blockSize[blockNo] + size;
    if(offset==10){ table.insert (pair<string,sEntry *>(key,makeEntry(type,size,offsetNext[offsetNo],isInit))); }
-   else { table.insert (pair<string,sEntry *>(key,makeEntry(type,size,offsetG[offsetGNo],isInit))); }
-   offsetG[offsetGNo] = offsetG[offsetGNo] + size;
+   else if(offset==-10){table.insert (pair<string,sEntry *>(key,makeEntry(type,size,structOffset,isInit))); }
+   else { table.insert (pair<string,sEntry *>(key,makeEntry(type,size,global_offset[global_offset_number],isInit))); }
+   global_offset[global_offset_number] = global_offset[global_offset_number] + size;
    return;
 }
 
-void symbol_table:: fprintStruct(sEntry *a, FILE* file){
-   // cout << a->type << " " << "";
-    fprintf(file, "%s,",a->type.c_str());
-    switch(switchItem[a->type]){
-        case 1:{ 
-  //               cout << *tmp << endl;
-                 fprintf(file, " %lld,%lld,%d\n", a->size, a->offset,a->is_init);
-                 break;
-               }
-        case 2:{ //int* tmp = (int  *)(a->value);
-                 fprintf(file, "%lld,%lld ,%d\n", a->size, a->offset,a->is_init);
-    //             cout << *tmp << endl;
-                 break;
-                }
-        case 3:{
-               //  fprintf(file, "This is a function,");
-                 fprintf(file, "%lld, %lld,%d\n", a->size, a->offset,a->is_init); break;
+// void symbol_table:: fprintStruct(sEntry *a, FILE* file){
+   
+//     fprintf(file, "%s,",a->type.c_str());
+//     switch(switchItem[a->type]){
+//         case 1:{ 
+//   //               cout << *tmp << endl;
+//                  fprintf(file, " %lld,%lld,%d\n", a->size, a->offset,a->is_init);
+//                  break;
+//                }
+//         case 2:{ //int* tmp = (int  *)(a->value);
+//                  fprintf(file, "%lld,%lld ,%d\n", a->size, a->offset,a->is_init);
+//     //             cout << *tmp << endl;
+//                  break;
+//                 }
+//         case 3:{
+//                //  fprintf(file, "This is a function,");
+//                  fprintf(file, "%lld, %lld,%d\n", a->size, a->offset,a->is_init); break;
 
-               }
-       default : {
-                 //fprintf(file, "NULL,");
-                 fprintf(file, "%lld, %lld, %d\n", a->size, a->offset,a->is_init);
+//                }
+//        default : {
+//                  //fprintf(file, "NULL,");
+//                  fprintf(file, "%lld, %lld, %d\n", a->size, a->offset,a->is_init);
 
-               }
+//                }
 
-    }
+//     }
 
-}
+// }
 
 string symbol_table:: funcArgList(string key){
       string a = funcArgumentMap[key];
       return a;
 }
 
-void symbol_table:: makeSymTable(string name,int type,string funcType){
+void symbol_table:: make_symbol_table(string name,int type,string funcType){
   string f ;
   if(funcType!="12345") f =string("FUNC_")+funcType; else f = string("Block");
   if(is_next==1){ insertSymbol(*tParent[curr],name,f,0,10,1);
@@ -140,19 +172,19 @@ void symbol_table:: makeSymTable(string name,int type,string funcType){
    blockNo++;
    symTable* myTable = new symTable;
     insertSymbol(*curr,name,f,0,0,1);
-    offsetGNo++;
-    offsetG[offsetGNo]=0;
+    global_offset_number++;
+    global_offset[global_offset_number]=0;
     tParent.insert(pair<symTable*, symTable*>(myTable,curr));
     symTable_type.insert(pair<symTable*, int>(myTable,type));
     curr = myTable; }
     is_next=0;
 }
 
-void symbol_table:: updateSymTable(string key){
+void symbol_table:: update_symbol_table(string key){
     curr = tParent[curr];
-    offsetGNo--;
-    offsetG[offsetGNo] += offsetG[offsetGNo+1];
-    updateSymtableSize(key);
+    global_offset_number--;
+    global_offset[global_offset_number] += global_offset[global_offset_number+1];
+    update_symbol_table_size(key);
     blockSize[blockNo-1] = blockSize[blockNo]+blockSize[blockNo-1];
     blockSize[blockNo] = 0;
     blockNo--;
@@ -187,7 +219,7 @@ void updateKey(string key,void *val){
 }
 */
 ull symbol_table:: getSize (char* id){
-  // integer
+  if(structSize.count(id)) return structSize[string(id)];
   if(!strcmp(id, "int")) return sizeof(int);
   if(!strcmp(id, "long int")) return sizeof(long int);
   if(!strcmp(id, "long long")) return sizeof(long long);
@@ -224,7 +256,7 @@ void symbol_table:: update_isInit(string key){
        temp->is_init =1;
    }
 }
-void symbol_table:: updateSymtableSize(string key){
+void symbol_table:: update_symbol_table_size(string key){
    sEntry *temp = lookup(key);
    if(temp){
        temp->size = blockSize[blockNo];
@@ -241,7 +273,7 @@ void updateOffset(string key1,string key2){
    }
 } 
 */
-void symbol_table:: insertFuncArguments(string a,string b){
+void symbol_table:: insert_function_args(string a,string b){
      funcArgumentMap.insert(pair<string,string>(a,b));
 }
 
@@ -257,10 +289,13 @@ void symbol_table:: printSymTables(symTable* a, string filename) {
   FILE* file = fopen(filename.c_str(), "w");
   fprintf( file,"Key,Type,Size,Offset,is_Initialized\n");
 
-
+  
   for(auto it: *a ){
     fprintf( file,"%s,", it.first.c_str());
-    fprintStruct(it.second, file);  
+    
+   //  fprintStruct(it.second, file);  
+    fprintf(file, "%s,",it.second->type.c_str());
+    fprintf(file, " %lld,%lld,%d\n", it.second->size, it.second->offset,it.second->is_init);
   }
   fclose(file);
 }
@@ -275,17 +310,17 @@ vector<string> Keyword = {"auto","break","case","char","const",
                         "union","unsigned","void","volatile","while",
                         "_Alignas","_Alignof","_Atomic","_Bool","_Complex",
                         "_Generic","_Imaginary","_Noreturn","_Static_assert","_Thread_local","__func__"};
-   for(int i=0;i<45;i++){
+   /*for(int i=0;i<45;i++){
       insertSymbol(*curr,Keyword[i],"Keyword",8,0,1);
-   }
+   }*/
 //-----------------------------inserting operators---------------------------------------------------
 vector<string> Operator = {"...",">>==","<<==","+=","-=","*=","/=","%=","&=","^=","|=",">>","<<","++","--","->","&&","||","<=",">=","\=\=","!=",
                            ";","{","<%","}","%>",",",":","=","(",")","[","]","<:",":>",".","&","!","~","-","+","*","/","%","<",
                            ">","^","|","?"};
   
-for(int i=0;i<50;i++){
+/*for(int i=0;i<50;i++){
    insertSymbol(*curr,Operator[i],"Operator",8,0,1);
-}
+}*/
 
 //////////////// basic printf, scanf, strlen :: to get the code running /////////
   insertSymbol(*curr,"printf","FUNC_void",8,0,1); // print_float
@@ -297,5 +332,6 @@ for(int i=0;i<50;i++){
   insertSymbol(*curr,"strlen","FUNC_int",8,0,1); //
   insertSymbol(*curr,"fread","FUNC_int",8,0,1);
   insertSymbol(*curr,"fwrite","FUNC_int",8,0,1);
-
+  insertSymbol(*curr,"pow","FUNC_int",8,0,1);
+  insertSymbol(*curr,"sqrt","FUNC_int",8,0,1);
 }

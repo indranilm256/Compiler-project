@@ -4,52 +4,52 @@
 using namespace std;
 using std::setw;
 
-map<int , string> gotoLabels;
-ofstream intermediateCodeFile;
-long long Index = -1;
-map<string, int> gotoIndex;
-unordered_map<string, list<int>> gotoIndexPatchList;
+map<int , string> Goto_labels;
+ofstream IRcode_file; // intermediate code file
+long long inx = -1; //index
+map<string, int> Goto_entry_no;
+unordered_map<string, list<int>> Goto_patching;
 
-vector <quad> emittedCode;
-string getTmpVar(){
+vector <quad> IRcode;
+string getVar(){
   static long a = 0;
   a++;
-  string tmp =  string("__t");
-  tmp = tmp + to_string(a);
-  tmp = tmp + string("__");
-  return tmp;
+  string str =  string("__t");
+  str = str + to_string(a);
+  str = str + string("__");
+  return str;
 }
 
-pair<string, sEntry*> getTmpSym(string type){
-  string tmp = getTmpVar();
+pair<string, sEntry*> getSym(string type){
+  string tmp = getVar();
   char *cstr = new char[type.length() + 1];
   strcpy(cstr, type.c_str());
   symbol_table::insertSymbol(*curr, tmp, type, symbol_table::getSize(cstr),0, 1);
   return pair <string, sEntry* >(tmp, symbol_table::lookup(tmp));
 }
 
-int emit (qid op, qid id1, qid id2, qid  res, int stmtNum){
+int emit (qid op, qid id1, qid id2, qid  res, int stmtCounter){
   quad t;
   t.id1 = id1;
   t.id2 = id2;
   t.res = res;
   t.op = op;
-  t.stmtNum = stmtNum;
-  emittedCode.push_back(t);
-  Index++;
-  return emittedCode.size()-1;
+  t.stmtCounter = stmtCounter;
+  IRcode.push_back(t);
+  inx++;
+  return IRcode.size()-1;
 }
 
 void backPatch(list<int> li, int p){
   for(auto i : li){
-    emittedCode[i].stmtNum = p;
+    IRcode[i].stmtCounter = p;
   }
   return;
 }
 
 
 int assignment1(char *o, string type, string type1, string type3, qid place1, qid place3){
-	qid t = getTmpSym(type);
+	qid t = getSym(type);
   qid t2;
 	string op;
 	string op1;
@@ -65,14 +65,14 @@ int assignment1(char *o, string type, string type1, string type3, qid place1, qi
 	  if(strcmp(o,"=")) k= emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, place3, t, -1);
 	}
 	else if(isFloat(type1) && isInt(type3)){
-		t2 = getTmpSym(type);
+		t2 = getSym(type);
 		k = emit(pair<string, sEntry*>("inttoreal",NULL), place3,pair<string, sEntry*>("",NULL),t2,-1);
 		op += "real";
 		if(strcmp(o,"=")) emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, t2, t, -1);
     b=1;
 	}
 	else if(isFloat(type3) && isInt(type1)){
-		t2 = getTmpSym(type);
+		t2 = getSym(type);
 		k = emit(pair<string, sEntry*>("realtoint",NULL),place3,pair<string, sEntry*>("",NULL),t2,-1);
 		op += "int";
 		if(strcmp(o,"=")) emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, t2, t, -1);
@@ -87,7 +87,7 @@ int assignment1(char *o, string type, string type1, string type3, qid place1, qi
   return k;
 }
 void assignment2(char *o, string type, string type1, string type3, qid place1, qid place3){
-	qid t = getTmpSym(type);
+	qid t = getSym(type);
 	string op;
 	string op1;
   if(!strcmp(o,"%=")) op = "%";
@@ -100,50 +100,50 @@ void assignment2(char *o, string type, string type1, string type3, qid place1, q
   emit(pair<string, sEntry*>(op, symbol_table::lookup(op1)), place1, place3, t, -1);
   emit(pair<string, sEntry*>("=", symbol_table::lookup("=")),  t, pair<string, sEntry*>("", NULL), place1, -1);
 }
-char* backPatchGoto(){
-  for (auto it : gotoIndexPatchList){
-    if(gotoIndex.find(it.first)==gotoIndex.end()){
+char* isunfinishedGoto(){
+  for (auto it : Goto_patching){
+    if(Goto_entry_no.find(it.first)==Goto_entry_no.end()){
         char *a;
         strcpy(a, it.first.c_str());
         return a;
     }
     else {
-        backPatch(gotoIndexPatchList[it.first] , gotoIndex[it.first]);
+        backPatch(Goto_patching[it.first] , Goto_entry_no[it.first]);
     }
   }
     return NULL;
 }
 
-void display3ac(){//name change merge
-  intermediateCodeFile.open("intermediateCode.txt");
-	for(int i = 0; i<emittedCode.size(); ++i)  {
-		//display(emittedCode[i], i);
-      quad q = emittedCode[i];
-      if(q.stmtNum == -1 || q.stmtNum == -4){
-        intermediateCodeFile << setw(5) << "[" << i << "]" << ": " << setw(15) << q.op.first << " " <<
+void write3acfile(){//name change merge
+  IRcode_file.open("intermediateCode.txt");
+	for(int i = 0; i<IRcode.size(); ++i)  {
+		//display(IRcode[i], i);
+      quad q = IRcode[i];
+      if(q.stmtCounter == -1 || q.stmtCounter == -4){
+        IRcode_file << setw(5) << "[" << i << "]" << ": " << setw(15) << q.op.first << " " <<
           setw(15) << q.id1.first << " " <<
           setw(15) << q.id2.first << " " <<
           setw(15) << q.res.first << '\n';
       }
-      else if(q.stmtNum==-2 || q.stmtNum == -3){
-        intermediateCodeFile  << endl << "[" << i << "]" << ": "<< q.op.first << endl << endl;
+      else if(q.stmtCounter==-2 || q.stmtCounter == -3){
+        IRcode_file  << endl << "[" << i << "]" << ": "<< q.op.first << endl << endl;
       }
 
       else{
-          int k = q.stmtNum;
-          while(emittedCode[k].op.first == "GOTO" && emittedCode[k].id1.first == ""){
-              k = emittedCode[k].stmtNum;
+          int k = q.stmtCounter;
+          while(IRcode[k].op.first == "GOTO" && IRcode[k].id1.first == ""){
+              k = IRcode[k].stmtCounter;
           } 
           
-          if(gotoLabels.find(k)== gotoLabels.end()) gotoLabels.insert(pair<int, string>(k, "Label"+to_string(k)));
-          intermediateCodeFile << setw(5) << "[" << i << "]" << ": " << setw(15) << q.op.first << " " <<
+          if(Goto_labels.find(k)==Goto_labels.end())Goto_labels.insert(pair<int, string>(k, "Label"+to_string(k)));
+          IRcode_file << setw(5) << "[" << i << "]" << ": " << setw(15) << q.op.first << " " <<
           setw(15) << q.id1.first << " " <<
           setw(15) << q.id2.first << " " <<
           setw(15) << k << "---" << '\n';
-          emittedCode[i].stmtNum = k;
+          IRcode[i].stmtCounter = k;
       }
 
 	}
 	return;
-  intermediateCodeFile.close();
+  IRcode_file.close();
 }

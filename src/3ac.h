@@ -7,8 +7,10 @@
 #include <iomanip>
 #include "symbol_table.h"
 using namespace std;
-extern map<string, int> gotoIndex;
-extern unordered_map<string, list<int>> gotoIndexPatchList;
+extern map<string, int> Goto_entry_no;
+extern unordered_map<string, list<int>> Goto_patching;
+
+extern map<int , string> Goto_labels;
 typedef pair <string, sEntry*> qid;
 
 typedef struct quadruple{
@@ -16,17 +18,16 @@ typedef struct quadruple{
   qid id2; 
   qid op;
   qid res;
-  int stmtNum;
+  int stmtCounter;
 } quad;
 
-extern vector <quad> emittedCode;
-extern map<int , string> gotoLabels;
 
-string getTmpVar();
-pair<string, sEntry*> getTmpSym(string type);
+extern vector <quad> IRcode;
+string getVar();
+pair<string, sEntry*> getSym(string type);
 int emit (qid id1, qid id2, qid op, qid  res, int stmtNum);
 void backPatch(list<int> li, int i);
-void display3ac();
+void write3acfile();
 int assignment1(char *op, string type, string type1, string type3, qid place1, qid place3);
 void assignment2(char *op, string type, string type1, string type3, qid place1, qid place3);
-char* backPatchGoto();
+char* isunfinishedGoto();
