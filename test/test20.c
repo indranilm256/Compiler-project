@@ -1,6 +1,7 @@
+int foo(int x);
 double bar(int a){
-    int b;
-    printn(a);
+    if(a > 0) return foo(a-1);
+    else return 0;
 }
 int foo(int a){
     int b=a;
@@ -8,7 +9,7 @@ int foo(int a){
 }
 int main(){
     int a;
-    scanf("%d", &a);
+    scann(&a);
     foo(a);
     return 0;
 

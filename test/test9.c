@@ -1,18 +1,11 @@
-int func1(int a){
-  if(a==0) return 1;
-  return a--;
+int factorial(int n){
+  if(n == 1){return 1;}
+  return n * factorial(n-1);
 }
 
-struct node {
-  int a;
-  int b;
-  char* c;
-};
-
 int main(){
-  int a = 10;
-  struct node d;
-  int b,c;
-  int j = d.a;
-return 1;
-  }
+  int a;
+  a = 3;
+  int b = factorial(a);
+  return 0;
+}

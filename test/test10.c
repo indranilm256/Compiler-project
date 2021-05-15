@@ -1,15 +1,14 @@
-int f (int arg1, int arg2, int arg3, int arg4, int ){
-  printf(a);i
+int f (int a, int b, int c, int d, int e ){
+  printf(a);
   printf(b);
   printf(c);
   printf(d);
   printf(e);
-  int k = a+b+c+d+e+f;
+  int k = a + b + c + d + e;
   return k;
 }
 
 int g (int a, int b, int c){
-
   return a+b+c;
 }
 
@@ -19,7 +18,7 @@ int main(){
   int c = 3;
   int d = 4;
   int e = 5;
-  int fa = f(a,b,c, d, e, a);
+  int fa = f(a,b,c, d, e);
   printf(fa);
   return 0;
 

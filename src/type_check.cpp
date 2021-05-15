@@ -338,8 +338,10 @@ char* type_check :: conditional(string type1, string type2)//logical_or ?  expre
 char* type_check ::valid_assignment(string type1, string type2) //postfix_expression '(' argument_expression_list ')' | designation M initializer | initializer_list ',' M designation initializer | initializer_list ',' M  initializer 
 {
     char *a = new char();
+    //cout << type1 << " " << type2 << endl;
     if(type1 == type2){return "true";}
     if(type2 == "char" && isInt(type1)){return "true";}
+    else if(isInt(type1) && isInt(type2)){return "true";}
     else if(type2 == "int" && (type1 != "char")){
          a = "Warning";
         return a;
@@ -377,6 +379,11 @@ char* type_check ::valid_assignment(string type1, string type2) //postfix_expres
     else if((isInt(type1)||isFloat(type1))&&(isFloat(type2) ||isInt(type2)))
     {
        
+        a = "true";
+        return a;
+    }
+    else if ((type2[type2.size() - 1] == '*') && (type1[type1.size() - 1] == '*') && type1 == type2) //pointer but not similar type
+    {
         a = "true";
         return a;
     }

@@ -1,6 +1,9 @@
 struct same{
     int a;
     int b;
+    int* d;
+    char* c;
+    char e;
 };
 
 int main(){

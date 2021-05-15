@@ -31,7 +31,7 @@ int main() {
   int arr[100];
   prints("Input the number of test cases : ");
   int T;
-  scanf("%d", T);
+  scann(&T);
   int i,j,len,k;
   j=0;
   int* a;
@@ -40,12 +40,12 @@ int main() {
     T = T-1;
     j = j +1;
     prints("Input the length of the array : ");
-    scanf("%d", len);
+    scann(&len);
     prints("Testcase No. ");
     printn(j);
     prints(": now input the array elements -\n");
     for (i=0; i<len; i = i+1) {
-      scanf("%d", arr[i]) ;
+      scann(arr + i) ;
     }
     i=0;
     a = &arr[i];

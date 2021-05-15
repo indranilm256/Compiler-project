@@ -14,12 +14,12 @@ long long int fibonacci(int n){
 int main(){
   int T,i,k;
   prints("input the number of test cases : ");
-  scanf("%d", T);
+  scann(&T);
   for(i=0;i<T;i=i+1){
      prints("input the index of fibonacci series : ");
-     scanf("%d", k);
+     scann(&k);
      prints("fibonacci number corresponding to your input value is :");
-     printf(fibonacci(k));
+     printn(fibonacci(k));
   }
   return 0;
 }

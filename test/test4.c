@@ -1,5 +1,8 @@
+
 int main(){
-	int a[3] = {2,2,2};
-	a[2] = 0;
-	return 0;
+    int a;
+    a = 1;
+    int* p;
+    p = &a;
+    *p = 5;
 }

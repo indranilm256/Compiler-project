@@ -40,8 +40,7 @@ typedef struct sTableEntry{
 
 typedef unordered_map<string,sEntry *> symTable;
 
-//extern long long offsetNext[100];
-//extern int offsetNo;
+
 extern long int blockSize[100];
 extern int blockNo;
 extern long long global_offset[100];

@@ -31,8 +31,7 @@ void Node :: mkleaf() {
 
   // printing string token no.
   if(node_name[0] == '"'){
-    node_name = node_name.substr(1, node_name.size()-2);
-    
+    node_name = node_name.substr(1, node_name.size()-2);  
   }
   fprintf(digraph, "\t%d [label=\"%s\"];\n", node_id, node_name.c_str());
 }

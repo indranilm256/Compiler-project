@@ -1,10 +1,11 @@
-int main() {
-   int x,y,z;
-   x=5;
-   y=6;
-   z= x+y*y+x*(y+y);
-   float b;
-   char *a;
-   if(a<b){;}
-   if(a<x){;}
+int main(float a,int b) {
+   int w,y,z;
+   w = 5;
+   y = 6;
+   z =  w + y * y +  w * ( y + y );
+   char * i;
+   int x;
+   w = (x == a) ? b : i;
+   if(a < i){;}
+   if(a < x){;}
 }

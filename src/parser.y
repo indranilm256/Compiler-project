@@ -144,15 +144,14 @@ postfix_expression
 												char* a = type_check::postfix($1->node_type, 1);
 												int size = symbol_table:: getSize(a);
 												if(!isInt($3->node_type)){yyerror("Error: Array Index should be of type 'int' not '%s' ",$3->node_type.c_str());}
-												
 												if(a){
 													
 													string s = a;
 													$$->node_type = s;
 													//---------------3AC-------------------------------//
                                                  $$->place = getSym($$->node_type);
-                                                 //qid opT  = pair<string,sEntry*>("[]",NULL);
-                                                 //int k = emit(opT, $1->place, $3->place, $$->place, -1);
+                                                 qid opT  = pair<string,sEntry*>("[]",NULL);
+                                                 int k = emit(opT, $1->place, $3->place, $$->place, -1);
                                                  $$->place.second->size = size;
                                                  $$->place.second->offset = $1->place.second->offset;
                                                  $$->place.second->is_init = -5;
@@ -209,6 +208,7 @@ postfix_expression
 																		unsigned f1 = 1;
 																		unsigned f2 = 1;
 																		int argnum = 0;
+
 																		while(f1 != -1 && f2 != -1){
 																			f1 = tmp1.find_first_of(",");
 																			f2 = tmp2.find_first_of(",");
@@ -218,16 +218,21 @@ postfix_expression
 																			if(f1 != -1) tmp1 = tmp1.substr(f1+1);
 																			if(f2 != -1) tmp2 = tmp2.substr(f2+1);
 																			if(B == "...") break;
-	
-																			b = type_check::valid_assignment(A,B);
+																			b = type_check::valid_assignment(tmp1,tmp2);
+																			
 																			if(b){
 																				if(!strcmp(b,"warning")){
 																					yyerror("Warning: Passing argument %d of \'%s\' from incompatible pointer type.\n Note : expected \'%s\' but argument is of type \'%s\'\n     \'%s %s %s \'",argnum,($1->node_key).c_str(),B.c_str(),A.c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());
-																					}
+																				}else if(!strcmp(b,"Warning")){
+																					//cout << 227 << endl;
+																					yyerror("Error: Incompatible type for argument %d of \'%s\'.\n Note: expected \'%s\' but argument is of type \'%s\' \n        \'%s %s %s \'",argnum,($1->node_key).c_str(),B.c_str(),A.c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());
 																				}
+												
+																			}
 																			else{
-																				yyerror("Error: Incompatible type for argument %d of \'%s\'.\n Note: expected \'%s\' but argument is of type \'%s\' \n        \'%s %s %s \'",argnum,($1->node_key).c_str(),B.c_str(),A.c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());
-																				} 
+																				//cout << 233 << endl;
+																				//yyerror("Error: Incompatible type for argument %d of \'%s\'.\n Note: expected \'%s\' but argument is of type \'%s\' \n        \'%s %s %s \'",argnum,($1->node_key).c_str(),B.c_str(),A.c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());
+																			} 
 																			if(f1 != -1 && f2 != -1){continue;}
 																			else if(f2 != -1){
 																				if(!(tmp2==string("..."))) yyerror("Error: Too few arguments for the function %s\n    %s %s %s ",($1->node_key).c_str(),($$->node_type).c_str(),($1->node_key).c_str(),funcArgs.c_str());
@@ -440,12 +445,12 @@ unary_expression
 	;
 
 unary_operator
-	: '&'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
-	| '*'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
-	| '+'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
-	| '-'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
-	| '~'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
-	| '!'		{Node* n = new Node($1);n->mkleaf(); $$ = n;}
+	: '&'		{Node* n = new Node($1);n->mkleaf(); $$ = n;$$->place = pair<string, sEntry*>("&", symbol_table::lookup("&"));}
+	| '*'		{Node* n = new Node($1);n->mkleaf(); $$ = n;$$->place = pair<string, sEntry*>("unary*", symbol_table::lookup("*"));}
+	| '+'		{Node* n = new Node($1);n->mkleaf(); $$ = n;$$->place = pair<string, sEntry*>("unary+", symbol_table::lookup("+")); }
+	| '-'		{Node* n = new Node($1);n->mkleaf(); $$ = n;$$->place = pair<string, sEntry*>("unary-", symbol_table::lookup("-"));}
+	| '~'		{Node* n = new Node($1);n->mkleaf(); $$ = n;$$->place = pair<string, sEntry*>("~", symbol_table::lookup("~"));}
+	| '!'		{Node* n = new Node($1);n->mkleaf(); $$ = n;$$->place = pair<string, sEntry*>("!", symbol_table::lookup("!"));}
 	;
 
 cast_expression
@@ -539,7 +544,7 @@ multiplicative_expression
                  													//--------------3AC------------------------//
 																}
 																else if(!strcmp(a,"float")){
-																	Node* n = new Node("*float");
+																	Node* n = new Node("/float");
 																	n->mknode((char*)NULL,$1,$3);
 																	$$ = n;
 																	$$->node_type = "long double";
@@ -602,7 +607,7 @@ additive_expression
 															string p;
 															if(a){
 																string s = a;
-																 p = string("+ ") + s;
+																 p = string("+") + s;
 																strcpy(q,p.c_str());
 															}else{ q = "+";}
 												
@@ -642,7 +647,7 @@ additive_expression
 															char* q = new char();
 															string p;
 															if(a){string s = a;
-															p = string("- ") + s;
+															p = string("-") + s;
 															strcpy(q,p.c_str());
 															}else{ q = "-";}
 															Node* n = new Node(q);
@@ -1042,6 +1047,7 @@ assignment_expression
 		Node* n = new Node($2);
 		n->mknode((char*)NULL,$1,$3);
 		$$ = n;
+		
     	char* c = type_check::assignment($1->node_type,$3->node_type,$2);
         if(c){
             if(!strcmp(c,"true")){ $$->node_type = $1->node_type; }
@@ -2275,14 +2281,16 @@ int  main(int argc,char **argv){
 		char* blankGotoError = isunfinishedGoto();
  		if(blankGotoError)
     		yyerror("ERROR: '\%s'\ label used but not defined\n", blankGotoError);
-		if(k==0) graphEnd();
-		write3acfile();
-		reset_reg();
-  		code_generator();
-  		print_code();
-		symFileName = "GST.csv";
-		symbol_table::printSymTables(curr,symFileName);
-		symbol_table::printFuncArguments();
+		if(k==0){ 
+			graphEnd();
+			write3acfile();
+			reset_reg();
+			code_generator();
+			print_code();
+			symFileName = "GST.csv";
+			symbol_table::printSymTables(curr,symFileName);
+			symbol_table::printFuncArguments();
+		}
 	}
 	return 0;
 }

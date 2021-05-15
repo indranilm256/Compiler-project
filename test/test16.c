@@ -1,6 +1,5 @@
 int main(){
-
-  fread("test.txt");
-
-  return 1;
+	int a[3];
+	a[2] = 0;
+	return 0;
 }

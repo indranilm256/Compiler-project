@@ -23,6 +23,7 @@ string getVar(){
 pair<string, sEntry*> getSym(string type){
   string tmp = getVar();
   char *cstr = new char[type.length() + 1];
+  //cout << type.c_str();
   strcpy(cstr, type.c_str());
   symbol_table::insertSymbol(*curr, tmp, type, symbol_table::getSize(cstr),0, 1);
   return pair <string, sEntry* >(tmp, symbol_table::lookup(tmp));
@@ -49,7 +50,7 @@ void backPatch(list<int> li, int p){
 
 
 int assignment1(char *o, string type, string type1, string type3, qid place1, qid place3){
-	qid t = getSym(type);
+	qid t = place3;
   qid t2;
 	string op;
 	string op1;
@@ -58,6 +59,7 @@ int assignment1(char *o, string type, string type1, string type3, qid place1, qi
     a=1;
   }else{
 		op = o[0];
+    t = getSym(type);
 	}
   op1 = op;
 	if(isInt(type1) && isInt(type3)){

@@ -85,10 +85,10 @@ void symbol_table:: symbol_table_init(){
     addKeywords();
     funcArgumentMap.insert(pair<string,string>(string("printf"),string("float")));
     funcArgumentMap.insert(pair<string,string>(string("printn"),string("int")));
-    funcArgumentMap.insert(pair<string,string>(string("prints"),string("char*,...")));
-    funcArgumentMap.insert(pair<string,string>(string("scanf"),string("char*,float")));
-    funcArgumentMap.insert(pair<string,string>(string("scann"),string("char*,int")));
-    funcArgumentMap.insert(pair<string,string>(string("scans"),string("char*,...")));
+    funcArgumentMap.insert(pair<string,string>(string("prints"),string("char*")));
+    funcArgumentMap.insert(pair<string,string>(string("scanf"),string("float*")));
+    funcArgumentMap.insert(pair<string,string>(string("scann"),string("int*")));
+    funcArgumentMap.insert(pair<string,string>(string("scans"),string("char*")));
     funcArgumentMap.insert(pair<string,string>(string("strlen"),string("char*")));
     funcArgumentMap.insert(pair<string,string>(string("fread"),string("char*")));
     funcArgumentMap.insert(pair<string,string>(string("fwrite"),string("char*,char*")));

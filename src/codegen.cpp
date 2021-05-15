@@ -154,7 +154,7 @@ void code_generator() {
           else{
             int param_num = 0;
             int param_size = 76;
-            char *a = "int";//32 bit isliye
+            char *a = "int";//32 bit 
             param_size += argcount* symbol_table::getSize(a);
 
             putln("li $s6, " + to_string(param_size));
@@ -183,7 +183,7 @@ void code_generator() {
 
       // -------------------for assignment operators-------------------
       else if (IRcode[i].op.first == "=" || IRcode[i].op.first == "realtoint" || IRcode[i].op.first == "inttoreal") {
-        if (IRcode[i].res.second == NULL)
+        // if (IRcode[i].res.second == NULL)
         if (IRcode[i].res.second->is_init == -5)//postfix_expression '[' expression ']'
           r3 = string("$t7");
         else
@@ -310,29 +310,34 @@ void code_generator() {
       }
 
       //      ------------------- addition of int ------------------- 
-      else if (IRcode[i].op.first == "+int") {
+      else if (IRcode[i].op.first == "+ int" || IRcode[i].op.first == "+int" || IRcode[i].op.first == "++S") {
         operator_asm1(i);
         if (IRcode[i].id2.second != NULL) {
           operator_asm2(i);
           putln("add " + r1 + ", " + r2 + ", " + r3);
         } 
-        else putln("addi " + r1 + ", " + r2 + ", " + IRcode[i].id2.first);
+        else{
+          IRcode[i].id2.first = "1";
+           putln("addi " + r1 + ", " + r2 + ", " + IRcode[i].id2.first);
+        }
       }
 
       
       // -------------------substraction of integer-------------------
-      else if (IRcode[i].op.first == "-int") {
+      else if (IRcode[i].op.first == "- int" || IRcode[i].op.first == "-int" || IRcode[i].op.first == "--S") {
         operator_asm1(i);
         if (IRcode[i].id2.second != NULL) {
           operator_asm2(i);
           putln("sub " + r1 + ", " + r2 + ", " + r3);
         } 
-        else putln("addi " + r1 + ", " + r2 + ", -" +
+        else{ IRcode[i].id2.first = "1";
+          putln("addi " + r1 + ", " + r2 + ", -" +
                   IRcode[i].id2.first);
+            }
       }
 
       // -------------------multiplication of integer-------------------
-      else if (IRcode[i].op.first == "*int") {
+      else if (IRcode[i].op.first == "* int"||IRcode[i].op.first == "*int") {
         operator_asm1(i);
         if (IRcode[i].id2.second != NULL) {
           operator_asm2(i);
@@ -345,7 +350,7 @@ void code_generator() {
         }
       }
       // -------------------division of integers-------------------
-      else if (IRcode[i].op.first == "/int") {
+      else if (IRcode[i].op.first == "/ int"||IRcode[i].op.first == "/int") {
         operator_asm1(i);
         if (IRcode[i].id2.second != NULL) {
           operator_asm2(i);
@@ -358,7 +363,7 @@ void code_generator() {
         }
       }
       //      ------------------- addition of real/float ------------------- 
-      else if (IRcode[i].op.first == "+real") {
+      else if (IRcode[i].op.first == "+ real"||IRcode[i].op.first == "+real") {
         operator_asm1(i);
         if (IRcode[i].id2.second != NULL) {
           operator_asm2(i);
@@ -375,7 +380,7 @@ void code_generator() {
         }
       }
       //      ------------------- subtraction of real/float------------------- 
-      else if (IRcode[i].op.first == "-real") {
+      else if (IRcode[i].op.first == "- real"||IRcode[i].op.first == "-real") {
         operator_asm1(i);
         if (IRcode[i].id2.second != NULL) {
           operator_asm2(i);
@@ -393,7 +398,7 @@ void code_generator() {
       }
 
       //      ------------------- multiplication of real/float ------------------- 
-      else if (IRcode[i].op.first == "*real") {
+      else if (IRcode[i].op.first == "* real"||IRcode[i].op.first == "*real") {
         operator_asm1(i);
         if (IRcode[i].id2.second != NULL) {
           operator_asm2(i);
@@ -410,7 +415,7 @@ void code_generator() {
       }
 
       //      ------------------- division of real/float------------------- 
-      else if (IRcode[i].op.first == "/real") {
+      else if (IRcode[i].op.first == "/ real"||IRcode[i].op.first == "/real") {
         operator_asm1(i);
         if (IRcode[i].id2.second != NULL) {
           operator_asm2(i);
@@ -704,7 +709,7 @@ string get_reg(qid temp){
     }
   }
   if(it == reg.end())r = string("");
-  if( r!=""){ return r; }
+  if( r!=""){ r.erase(r.begin(), r.begin()+1);return r; }
 
   //Check if we have a free_reg
   if(free_reg.size()) {
@@ -752,6 +757,7 @@ string get_reg(qid temp){
     string tmp = "_" + r;
     reg[tmp] = temp.first;
   }
+  return r;
 }
 void array_to_reg(qid tmp, string regtmp){//4 * size + offset
     if(curr_func == "main") {
@@ -894,7 +900,7 @@ void print_int_asm(){
   argcount = 0; 
 }
 void print_float_asm(){
-  putln("mov $f12, $a0");
+  putln("mtc1 $a0, $f12");
   putln("li $v0, 2");
   putln("syscall");
   argcount = 0;   
@@ -912,7 +918,7 @@ void scan_int_asm(){
 void scan_float_asm(){
         putln("li $v0, 6");
         putln("syscall");
-        putln("move " + r1 + ", $f0");  
+        putln("mfc1 " + r1 + ", $f0");  
 }
 void scan_string_asm(){
         putln("la $a0, stringspace");
@@ -927,33 +933,31 @@ void read_file(){
         putln("li $a1, 0"); //set to read mode
         putln("li $a2, 0");
         putln("syscall"); 
-        putln("move $s0, $v0"); //saves filedescriptor
-        putln("li $a1, 0"); //set to read mode 
-        putln("li $a2, 0");
-        putln("syscall"); 
         putln("move $s6, $v0"); //saves filedescriptor
         putln("li $v0, 14");
         putln("move $a0, $s6");
         putln("la $a1, reservedspace");
         putln("li $a2, 1024");
         putln("syscall");
-        putln("li $v0, 4");
+        putln("li $v0, 4");//print string out
         putln("la $a0, reservedspace");
         putln("syscall");
-        putln("li $v0 16");
+        putln("li $v0 16");//close
         putln("move $a0, $s6");
         putln("syscall");
         argcount = 0;
 }
 void write_file(){
+        putln("mov $s7, $a1");
         putln("li $v0, 13");//syscall 13 - open file
-        putln("li $a1, 0"); //set to read mode 
+        putln("li $a1, 1"); //set to write mode 
         putln("li $a2, 0");
         putln("syscall");  
-        putln("move $s6, $v0"); //saves filedescriptor
-        putln("li $v0, 15");
-        putln("move $a0, $s6");
-        putln("li $a2, 30");
+        putln("mov $s6, $v0"); //saves filedescriptor
+        putln("li $v0, 15");//set write mode
+        putln("mov $a0, $s6");
+        putln("mov $a1, $s7");
+        putln("li $a2, 100");
         putln("syscall");
         putln("li $v0 16");
         putln("move $a0, $s6");
